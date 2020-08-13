@@ -162,6 +162,8 @@ function MainScreen({navigation}: Main) {
 
 const GameScreen = () => <Drawing />;
 
+const AfterGameScreen = () => <View />;
+
 const FadeInView = (props: any) => {
   const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
 
@@ -189,10 +191,27 @@ const Stack = createStackNavigator();
 function Navigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LoginScreen">
-        <Stack.Screen name="Login" component={LoginS} />
-        <Stack.Screen name="Main" component={MainScreen} />
-        <Stack.Screen name="Game" component={GameScreen} />
+      <Stack.Navigator initialRouteName="LoginS">
+        <Stack.Screen
+          name="Login"
+          component={LoginS}
+          options={{title: 'Login / Register'}}
+        />
+        <Stack.Screen
+          name="Main"
+          component={MainScreen}
+          options={{title: 'Skrib'}}
+        />
+        <Stack.Screen
+          name="Game"
+          component={GameScreen}
+          options={{title: 'Skrib'}}
+        />
+        <Stack.Screen
+          name="AfterGame"
+          component={AfterGameScreen}
+          options={{title: 'Skrib'}}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

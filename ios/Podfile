@@ -23,5 +23,10 @@ target 'skrib' do
     flipper_post_install(installer)
   end
 
+  permissions_path = '../node_modules/react-native-permissions/ios'
+
+  pod 'Permission-Microphone', :path => "#{permissions_path}/Microphone.podspec"
+  pod 'Permission-SpeechRecognition', :path => "#{permissions_path}/SpeechRecognition.podspec"
+
   pod 'Firebase/Auth'
 end

@@ -2,14 +2,19 @@ import React, {useRef} from 'react';
 import {
   Animated,
   StyleSheet,
-  Button,
   View,
   AppRegistry,
   Text,
+  Button,
 } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
+//import auth from '@react-native-firebase/auth';
+import {Provider} from 'react-native-paper';
+import App from './src';
+import {theme} from './src/core/theme';
+//import {LoginScreen} from './src/screens';
 
 interface Main {
   props: any;
@@ -139,6 +144,14 @@ const styles = StyleSheet.create({
 
 AppRegistry.registerComponent('Drawing', () => Drawing);
 
+function LoginS({navigation}: Main) {
+  return (
+    <Provider theme={theme}>
+      <App />
+    </Provider>
+  );
+}
+
 function MainScreen({navigation}: Main) {
   return (
     <FadeInView style={styles.playbuttonview}>
@@ -173,10 +186,11 @@ const FadeInView = (props: any) => {
 
 const Stack = createStackNavigator();
 
-function App() {
+function Navigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Skrib">
+      <Stack.Navigator initialRouteName="LoginScreen">
+        <Stack.Screen name="Login" component={LoginS} />
         <Stack.Screen name="Main" component={MainScreen} />
         <Stack.Screen name="Game" component={GameScreen} />
       </Stack.Navigator>
@@ -184,4 +198,4 @@ function App() {
   );
 }
 
-export default App;
+export default Navigator;

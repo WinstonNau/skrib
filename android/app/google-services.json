@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "703490486450",
+    "firebase_url": "https://skrib-e2873.firebaseio.com",
+    "project_id": "skrib-e2873",
+    "storage_bucket": "skrib-e2873.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:703490486450:android:d779f8b18e3bd758bcd9ab",
+        "android_client_info": {
+          "package_name": "com.skrib"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "703490486450-2mncou1hcl9skqpe8bl69t978099tte2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBex6z9EiPaPC3G9hAe3xsjSmH0s4cKmU8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "703490486450-2mncou1hcl9skqpe8bl69t978099tte2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

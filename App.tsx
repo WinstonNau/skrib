@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useRef, useEffect} from 'react';
 import {
   Animated,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   AppRegistry,
   Text,
   Button,
+  PermissionsAndroid,
 } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -14,7 +15,31 @@ import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
 import {Provider} from 'react-native-paper';
 import App from './src';
 import {theme} from './src/core/theme';
+import Voice from '@react-native-community/voice';
 //import {LoginScreen} from './src/screens';
+
+const requestMicrophonePermission = async () => {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      {
+        title: 'Skrib',
+        message:
+          'Skrib needs access to your microphone to handle your guesses.',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      }
+    );
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      console.log('You can use the microphone');
+    } else {
+      console.log('Microphone permission denied');
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+};
 
 interface Main {
   props: any;
@@ -145,6 +170,9 @@ const styles = StyleSheet.create({
 AppRegistry.registerComponent('Drawing', () => Drawing);
 
 function LoginS({navigation}: Main) {
+  useEffect(() => {
+    requestMicrophonePermission();
+  }, []);
   return (
     <Provider theme={theme}>
       <App />
@@ -191,7 +219,7 @@ const Stack = createStackNavigator();
 function Navigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LoginS">
+      <Stack.Navigator>
         <Stack.Screen
           name="Login"
           component={LoginS}

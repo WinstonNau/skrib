@@ -40,6 +40,12 @@ const LoginScreen = ({navigation}: Props) => {
       .then(() => {
         console.log('User account created & signed in!');
         navigation.navigate('Dashboard');
+      })
+      .catch((error) => {
+        if (error.code === 'auth/invalid-email') {
+          console.log('That email address is invalid!');
+        }
+        console.error(error);
       });
   };
 

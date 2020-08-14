@@ -10,6 +10,12 @@ import {theme} from '../core/theme';
 import {Navigation} from '../types';
 import {emailValidator, passwordValidator, nameValidator} from '../core/utils';
 import auth from '@react-native-firebase/auth';
+import {GoogleSignin} from '@react-native-community/google-signin';
+
+GoogleSignin.configure({
+  webClientId:
+    '703490486450-2mncou1hcl9skqpe8bl69t978099tte2.apps.googleusercontent.com',
+});
 
 type Props = {
   navigation: Navigation;
@@ -95,6 +101,16 @@ const RegisterScreen = ({navigation}: Props) => {
         Sign Up
       </Button>
 
+      <Button
+        onPress={() =>
+          onGoogleButtonPress().then(() => {
+            console.log('Signed in with Google!');
+            navigation.navigate('Dashboard');
+          })
+        }>
+        Sign-up with Google
+      </Button>
+
       <View style={styles.row}>
         <Text style={styles.label}>Already have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
@@ -104,6 +120,17 @@ const RegisterScreen = ({navigation}: Props) => {
     </Background>
   );
 };
+
+async function onGoogleButtonPress() {
+  // Get the users ID token
+  const {idToken} = await GoogleSignin.signIn();
+
+  // Create a Google credential with the token
+  const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+
+  // Sign-in the user with the credential
+  return auth().signInWithCredential(googleCredential);
+}
 
 const styles = StyleSheet.create({
   label: {

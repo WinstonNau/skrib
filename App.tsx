@@ -7,6 +7,7 @@ import {
   Text,
   Button,
   PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -18,7 +19,7 @@ import {theme} from './src/core/theme';
 import Voice from '@react-native-community/voice';
 //import {LoginScreen} from './src/screens';
 
-const requestMicrophonePermission = async () => {
+const requestAndroidMicrophonePermission = async () => {
   try {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
@@ -171,7 +172,7 @@ AppRegistry.registerComponent('Drawing', () => Drawing);
 
 function LoginS({navigation}: Main) {
   useEffect(() => {
-    requestMicrophonePermission();
+    Platform.OS === 'android' ? requestAndroidMicrophonePermission() : null;
   }, []);
   return (
     <Provider theme={theme}>

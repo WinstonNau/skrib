@@ -1,27 +1,42 @@
-import React, {memo} from 'react';
-import Background from '../components/Background';
-import Logo from '../components/Logo';
-import Header from '../components/Header';
-import Paragraph from '../components/Paragraph';
-import Button from '../components/Button';
+import React, {useRef, useEffect, memo} from 'react';
+import {Animated, StyleSheet, Button} from 'react-native';
+
 import {Navigation} from '../types';
 
-type Props = {
-  navigation: Navigation;
+const FadeInView = (props: any) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 5000,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  return (
+    <Animated.View // Special animatable View
+      style={{
+        ...props.style,
+        opacity: fadeAnim, // Bind opacity to animated value
+      }}>
+      {props.children}
+    </Animated.View>
+  );
 };
 
-const Dashboard = ({navigation}: Props) => (
-  <Background>
-    <Logo />
-    <Header>Let’s start</Header>
-    <Paragraph>
-      Your amazing app starts here. Open you favourite code editor and start
-      editing this project.
-    </Paragraph>
-    <Button mode="outlined" onPress={() => navigation.navigate('HomeScreen')}>
-      Logout
-    </Button>
-  </Background>
+const styles = StyleSheet.create({
+  playbuttonview: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+const MainScreen = ({navigation}: {navigation: Navigation}) => (
+  <FadeInView style={styles.playbuttonview}>
+    <Button title="Play now!" onPress={() => navigation.navigate('Game')} />
+  </FadeInView>
 );
 
-export default memo(Dashboard);
+export default memo(MainScreen);

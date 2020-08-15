@@ -6,6 +6,9 @@ const Drawing = () => (
   <SafeAreaView style={styles.container}>
     <View style={{flex: 1, flexDirection: 'row'}}>
       <RNSketchCanvas
+        onSketchSaved={(success, path) => {
+          console.log(path);
+        }}
         containerStyle={{backgroundColor: 'transparent', flex: 1}}
         canvasStyle={{backgroundColor: 'transparent', flex: 1}}
         defaultStrokeIndex={0}

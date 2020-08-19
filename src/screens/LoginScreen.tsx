@@ -38,7 +38,7 @@ const LoginScreen = ({navigation}: Props) => {
     auth()
       .signInWithEmailAndPassword(email.value, password.value)
       .then(() => {
-        console.log('User account created & signed in!');
+        console.log('User successfully signed in!');
         navigation.navigate('Dashboard');
       })
       .catch((error) => {

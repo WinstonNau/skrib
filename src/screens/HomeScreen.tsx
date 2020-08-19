@@ -14,9 +14,7 @@ const HomeScreen = ({navigation}: Props) => (
   <Background>
     <Header>Skrib</Header>
 
-    <Paragraph>
-      Login to play Skrib.
-    </Paragraph>
+    <Paragraph>Login to play Skrib.</Paragraph>
     <Button mode="contained" onPress={() => navigation.navigate('LoginScreen')}>
       Login
     </Button>

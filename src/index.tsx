@@ -22,6 +22,9 @@ const Router = createStackNavigator(
   {
     initialRouteName: 'HomeScreen',
     headerMode: 'none',
+    defaultNavigationOptions: {
+      gestureEnabled: false,
+    },
   }
 );
 

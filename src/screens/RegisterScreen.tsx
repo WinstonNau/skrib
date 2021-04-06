@@ -9,8 +9,9 @@ import BackButton from '../components/BackButton';
 import {theme} from '../core/theme';
 import {Navigation} from '../types';
 import {emailValidator, passwordValidator, nameValidator} from '../core/utils';
-import auth from '@react-native-firebase/auth';
+import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 import {GoogleSignin} from '@react-native-community/google-signin';
+import {gql, useMutation} from '@apollo/client';
 
 GoogleSignin.configure({
   webClientId:
@@ -22,6 +23,18 @@ type Props = {
 };
 
 const RegisterScreen = ({navigation}: Props) => {
+  const REGISTER_USER = gql`
+    mutation MyMutation($displayName: String!) {
+      registerPlayer(input: {displayName: $displayName}) {
+        player {
+          createdAt
+        }
+      }
+    }
+  `;
+
+  const [registerUser] = useMutation(REGISTER_USER);
+
   const [name, setName] = useState({value: '', error: ''});
   const [email, setEmail] = useState({value: '', error: ''});
   const [password, setPassword] = useState({value: '', error: ''});
@@ -40,8 +53,9 @@ const RegisterScreen = ({navigation}: Props) => {
 
     auth()
       .createUserWithEmailAndPassword(email.value, password.value)
-      .then(() => {
+      .then((uc: FirebaseAuthTypes.UserCredential) => {
         console.log('User account created & signed in!');
+        // console.dir(uc.additionalUserInfo + ' ' + uc.user);
         navigation.navigate('Dashboard');
       })
       .catch((error) => {
@@ -57,6 +71,27 @@ const RegisterScreen = ({navigation}: Props) => {
       });
   };
 
+  const onFinish = async () => {
+    let mutationResult: any;
+    try {
+      mutationResult = await registerUser({
+        variables: {
+          displayName: name.value,
+        },
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    const {data, errors} = mutationResult;
+
+    if (errors) {
+      console.log('Bye bye: ' + errors);
+    } else {
+      console.log('data:', data);
+    }
+  };
+
   return (
     <Background>
       <BackButton goBack={() => navigation.navigate('HomeScreen')} />
@@ -66,7 +101,7 @@ const RegisterScreen = ({navigation}: Props) => {
       <Header>Create Account</Header>
 
       <TextInput
-        label="Name"
+        label="Username"
         returnKeyType="next"
         value={name.value}
         onChangeText={(text) => setName({value: text, error: ''})}
@@ -97,7 +132,13 @@ const RegisterScreen = ({navigation}: Props) => {
         secureTextEntry
       />
 
-      <Button mode="contained" onPress={_onSignUpPressed} style={styles.button}>
+      <Button
+        mode="contained"
+        onPress={() => {
+          _onSignUpPressed();
+          onFinish();
+        }}
+        style={styles.button}>
         Sign Up
       </Button>
 

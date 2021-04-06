@@ -3,6 +3,14 @@ import {PermissionsAndroid, Platform} from 'react-native';
 import {Provider} from 'react-native-paper';
 import App from './src';
 import {theme} from './src/core/theme';
+import auth from '@react-native-firebase/auth';
+import {
+  ApolloProvider,
+  ApolloClient,
+  InMemoryCache,
+  createHttpLink,
+} from '@apollo/client';
+import {setContext} from '@apollo/client/link/context';
 
 const requestAndroidMicrophonePermission = async () => {
   try {
@@ -27,14 +35,42 @@ const requestAndroidMicrophonePermission = async () => {
   }
 };
 
+let user: any;
+
+auth().onAuthStateChanged(async (signedInUser) => {
+  signedInUser ? (user = signedInUser) : (user = null);
+  console.log('id token: ', await user?.getIdToken());
+});
+
+const httpLink = createHttpLink({
+  uri: 'https://skrib.herokuapp.com/graphql',
+});
+
+const authLink = setContext(async (_, {headers}) => {
+  // return the headers to the context so httpLink can read them
+  return {
+    headers: {
+      ...headers,
+      authorization: user ? `Bearer ${await user.getIdToken()}` : '',
+    },
+  };
+});
+
+const client = new ApolloClient({
+  link: authLink.concat(httpLink),
+  cache: new InMemoryCache(),
+});
+
 function Main() {
   useEffect(() => {
     Platform.OS === 'android' ? requestAndroidMicrophonePermission() : null;
   }, []);
   return (
-    <Provider theme={theme}>
-      <App />
-    </Provider>
+    <ApolloProvider client={client}>
+      <Provider theme={theme}>
+        <App />
+      </Provider>
+    </ApolloProvider>
   );
 }
 

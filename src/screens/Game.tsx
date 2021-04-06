@@ -1,23 +1,30 @@
 import React, {memo} from 'react';
 import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
+//import ImgToBase64 from 'react-native-image-base64';
 
 const Drawing = () => (
   <SafeAreaView style={styles.container}>
     <View style={{flex: 1, flexDirection: 'row'}}>
       <RNSketchCanvas
-        onSketchSaved={(success, path) => {
-          console.log(path);
+        onStrokeEnd={(path) => {
+          console.log(JSON.stringify(path));
         }}
+        // onSketchSaved={(success, path) => {
+        //   console.log(path);
+        //   ImgToBase64.getBase64String('file://' + path)
+        //     .then((base64String) => console.log(base64String))
+        //     .catch((err) => console.log(err));
+        // }}
         containerStyle={{backgroundColor: 'transparent', flex: 1}}
         canvasStyle={{backgroundColor: 'transparent', flex: 1}}
         defaultStrokeIndex={0}
         defaultStrokeWidth={5}
-        closeComponent={
+        /*closeComponent={
           <View style={styles.functionButton}>
             <Text style={styles.white}>Close</Text>
           </View>
-        }
+        }*/
         undoComponent={
           <View style={styles.functionButton}>
             <Text style={styles.white}>Undo</Text>
@@ -120,6 +127,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+// const updatePath = (path) => {};
 
 const GameScreen = () => <Drawing />;
 

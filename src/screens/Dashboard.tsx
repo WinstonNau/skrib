@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, memo} from 'react';
-import {Animated, StyleSheet, Button} from 'react-native';
+import {Animated, StyleSheet, Button, View, Text} from 'react-native';
 
 import {Navigation} from '../types';
 
@@ -29,14 +29,34 @@ const styles = StyleSheet.create({
   playbuttonview: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+  },
+  titleview: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  titlestyle: {
+    borderTopWidth: 50,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    fontSize: 50,
+    fontStyle: 'normal',
+    color: '#9400d3',
   },
 });
 
-const MainScreen = ({navigation}: {navigation: Navigation}) => (
-  <FadeInView style={styles.playbuttonview}>
-    <Button title="Play now!" onPress={() => navigation.navigate('Game')} />
-  </FadeInView>
-);
+const MainScreen = ({navigation}: {navigation: Navigation}) => {
+  return (
+    <>
+      <View style={styles.titleview}>
+        <Text style={styles.titlestyle}>Skrib</Text>
+      </View>
+      <FadeInView style={styles.playbuttonview}>
+        <Button title="Play now!" onPress={() => navigation.navigate('Game')} />
+      </FadeInView>
+    </>
+  );
+};
 
 export default memo(MainScreen);

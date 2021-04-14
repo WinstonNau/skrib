@@ -3,7 +3,7 @@ import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
 import {io} from 'socket.io-client';
 
-const socket = io('http://192.168.2.226:3000');
+const socket = io('https://skrib-socket.herokuapp.com');
 
 socket.on('connect', () => {
   console.log(
@@ -35,6 +35,16 @@ const Drawing = () => {
     console.log('Received (' + socket.id + '):', path);
   });
 
+  socket.on('clear', () => {
+    canvas?.clear();
+    console.log('Clear successful');
+  });
+
+  socket.on('undo', () => {
+    canvas?.undo();
+    console.log('Undo successful');
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={{flex: 1, flexDirection: 'row'}}>
@@ -64,11 +74,17 @@ const Drawing = () => {
               <Text style={styles.white}>Undo</Text>
             </View>
           }
+          onUndoPressed={() => {
+            socket.emit('undoReq');
+          }}
           clearComponent={
             <View style={styles.functionButton}>
               <Text style={styles.white}>Clear</Text>
             </View>
           }
+          onClearPressed={() => {
+            socket.emit('clearReq');
+          }}
           eraseComponent={
             <View style={styles.functionButton}>
               <Text style={styles.white}>Eraser</Text>

@@ -2,6 +2,7 @@ import React, {useRef, useEffect, memo} from 'react';
 import {Animated, StyleSheet, Button, View, Text} from 'react-native';
 
 import {Navigation} from '../types';
+import Background from '../components/Background';
 
 const FadeInView = (props: any) => {
   const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
@@ -48,14 +49,17 @@ const styles = StyleSheet.create({
 
 const MainScreen = ({navigation}: {navigation: Navigation}) => {
   return (
-    <>
+    <Background>
       <View style={styles.titleview}>
         <Text style={styles.titlestyle}>Skrib</Text>
       </View>
       <FadeInView style={styles.playbuttonview}>
-        <Button title="Play now!" onPress={() => navigation.navigate('Game')} />
+        <Button
+          title="Play now!"
+          onPress={() => navigation.navigate('GameLobby')}
+        />
       </FadeInView>
-    </>
+    </Background>
   );
 };
 

@@ -1,12 +1,5 @@
-import React, {memo, useState} from 'react';
-import {
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {io} from 'socket.io-client';
+import React, {memo, useEffect, useState} from 'react';
+import {StyleSheet, Text, View} from 'react-native';
 import Background from '../components/Background';
 import Header from '../components/Header';
 import Button from '../components/Button';
@@ -14,10 +7,9 @@ import BackButton from '../components/BackButton';
 import {Navigation} from '../types';
 import Modal from 'react-native-modal';
 import {getStatusBarHeight} from 'react-native-status-bar-height';
-import {gql, useMutation} from '@apollo/client';
+import {gql, useMutation, useQuery} from '@apollo/client';
 import {TextInput} from 'react-native-paper';
-
-const socket = io('https://skrib-socket.herokuapp.com');
+import socket from '../components/socket';
 
 //TODO: Notification from socket.io to update the GameLobby, when a new player joins
 
@@ -29,51 +21,102 @@ type Props = {
 //if totalCount = 1, which means that the joined person is the first one in the lobby: Enable Start and Settings Button
 //start with at least >3 people
 
-const GameLobby = ({navigation}: Props) => {
-  const JOIN_GAME = gql`
-    mutation MyMutation {
-      joinGame(input: {}) {
-        game {
-          gamePlayersByGameId {
-            totalCount
-            nodes {
-              playerByPlayerId {
-                displayName
-              }
-              gameId
+let gameData: any;
+let gameId: any;
+let gameTotal: any;
+let gamePlayers: any;
+
+const JOIN_GAME = gql`
+  mutation MyMutation {
+    joinGame(input: {}) {
+      game {
+        gamePlayersByGameId {
+          totalCount
+          nodes {
+            playerByPlayerId {
+              displayName
             }
+            gameId
           }
         }
       }
     }
+  }
+`;
+
+socket.on('newPlayer', (game, playerId) => {
+  if (gameId === game) {
+    //Add the username to the list
+  }
+});
+
+socket.on('playerDisconnect', (game, playerId) => {
+  if (gameId === game) {
+    //Delete the username from the list
+  }
+});
+
+const getUsernameById = (playerId: any) => {
+  const GET_USERNAME = gql`
+    query MyQuery2($id: UUID!) {
+      playerById(id: $id) {
+        displayName
+      }
+    }
   `;
 
-  let gameData: any;
+  const {loading, error, data} = useQuery(GET_USERNAME, {
+    variables: {
+      id: playerId,
+    },
+  });
+
+  if (error) {
+    return error;
+  }
+
+  return data.playerById.displayName;
+};
+
+const GameLobby = ({navigation}: Props) => {
+  const [joinGame] = useMutation(JOIN_GAME);
+
+  useEffect(() => {
+    const main = async () => {
+      console.log('in onFinish');
+
+      let mutationResult: any;
+      try {
+        mutationResult = await joinGame();
+        console.log('Joined successfully');
+      } catch (err) {
+        console.log('Error catched:::', err);
+      }
+
+      const {data, errors} = mutationResult;
+      gameData = data;
+      gameId = data.joinGame.game.gamePlayersByGameId.nodes.gameId;
+      gameTotal = data.joinGame.game.gamePlayersByGameId.totalCount;
+      gamePlayers =
+        data.joinGame.game.gamePlayersByGameId.nodes.playerByPlayerId
+          .displayName;
+
+      if (errors) {
+        console.log('Bye bye: ' + errors);
+      } else {
+        console.log('data:', data);
+      }
+      socket.emit('playerJoined', gameId);
+    };
+    main();
+  }, [joinGame]);
+
+  //console.log(getUsernameById('69dc043d-b227-4199-b443-113e8a3756cc'));
 
   socket.on('newPlayer', (gameId) => {
     if (gameData.joinGame.game.gamePlayersByGameId.nodes.gameId === gameId) {
     }
   });
-
-  const onFinish = async () => {
-    let mutationResult: any;
-    try {
-      mutationResult = await registerUser({});
-    } catch (err) {
-      console.log(err);
-    }
-
-    const {data, errors} = mutationResult;
-    gameData = data;
-
-    if (errors) {
-      console.log('Bye bye: ' + errors);
-    } else {
-      console.log('data:', data);
-    }
-  };
-
-  console.log('Test GameLobby');
 
   //change to false as default value after/while testing
 
@@ -92,7 +135,10 @@ const GameLobby = ({navigation}: Props) => {
     setAlertVisible(!isAlertVisible);
   };
 
-  const [registerUser] = useMutation(JOIN_GAME);
+  if (gameTotal === 1) {
+    setSettingsEnabled(true);
+    setStartButtonEnabled(true);
+  }
 
   return (
     <Background>
@@ -149,6 +195,7 @@ const GameLobby = ({navigation}: Props) => {
               //disconnect the user from the Game
               onPress={() => {
                 toggleAlert();
+                socket.emit('playerLeave', gameId);
                 navigation.navigate('Dashboard');
               }}>
               Back
@@ -163,7 +210,9 @@ const GameLobby = ({navigation}: Props) => {
         <Button
           disabled={!startButtonEnabled}
           style={{bottom: 20, width: '50%'}}
-          onPress={() => navigation.navigate('Game')}>
+          onPress={() => {
+            navigation.navigate('Game');
+          }}>
           START
         </Button>
         <Button

@@ -11,7 +11,7 @@ import {Navigation} from '../types';
 import {emailValidator, passwordValidator, nameValidator} from '../core/utils';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 import {GoogleSignin} from '@react-native-community/google-signin';
-import {gql, useMutation} from '@apollo/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 GoogleSignin.configure({
   webClientId:
@@ -23,18 +23,6 @@ type Props = {
 };
 
 const RegisterScreen = ({navigation}: Props) => {
-  const REGISTER_USER = gql`
-    mutation MyMutation($displayName: String!) {
-      registerPlayer(input: {displayName: $displayName}) {
-        player {
-          createdAt
-        }
-      }
-    }
-  `;
-
-  const [registerUser] = useMutation(REGISTER_USER);
-
   const [name, setName] = useState({value: '', error: ''});
   const [email, setEmail] = useState({value: '', error: ''});
   const [password, setPassword] = useState({value: '', error: ''});
@@ -55,7 +43,7 @@ const RegisterScreen = ({navigation}: Props) => {
       .createUserWithEmailAndPassword(email.value, password.value)
       .then((uc: FirebaseAuthTypes.UserCredential) => {
         console.log('User account created & signed in!');
-        // console.dir(uc.additionalUserInfo + ' ' + uc.user);
+        _saveUsername(name.value);
         navigation.navigate('Dashboard');
       })
       .catch((error) => {
@@ -71,24 +59,11 @@ const RegisterScreen = ({navigation}: Props) => {
       });
   };
 
-  const onFinish = async () => {
-    let mutationResult: any;
+  const _saveUsername = async (user: string) => {
     try {
-      mutationResult = await registerUser({
-        variables: {
-          displayName: name.value,
-        },
-      });
-    } catch (err) {
-      console.log(err);
-    }
-
-    const {data, errors} = mutationResult;
-
-    if (errors) {
-      console.log('Bye bye: ' + errors);
-    } else {
-      console.log('data:', data);
+      await AsyncStorage.setItem('user.name', user);
+    } catch (e) {
+      console.log('Error:', e);
     }
   };
 
@@ -136,7 +111,6 @@ const RegisterScreen = ({navigation}: Props) => {
         mode="contained"
         onPress={() => {
           _onSignUpPressed();
-          onFinish();
         }}
         style={styles.button}>
         Sign Up

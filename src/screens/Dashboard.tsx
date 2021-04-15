@@ -3,6 +3,9 @@ import {Animated, StyleSheet, Button, View, Text} from 'react-native';
 
 import {Navigation} from '../types';
 import Background from '../components/Background';
+import {gql, useMutation} from '@apollo/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getMainDefinition} from '@apollo/client/utilities';
 
 const FadeInView = (props: any) => {
   const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
@@ -47,7 +50,51 @@ const styles = StyleSheet.create({
   },
 });
 
+type Props = {
+  navigation: Navigation;
+};
+
 const MainScreen = ({navigation}: {navigation: Navigation}) => {
+  const REGISTER_USER = gql`
+    mutation MyMutation($displayName: String!) {
+      registerPlayer(input: {displayName: $displayName}) {
+        player {
+          createdAt
+        }
+      }
+    }
+  `;
+
+  const [registerUser] = useMutation(REGISTER_USER);
+  useEffect(() => {
+    const main = async () => {
+      console.log('In onFinish');
+
+      console.log(AsyncStorage.getItem('user.name'));
+
+      let name = await AsyncStorage.getItem('user.name');
+
+      let mutationResult: any;
+      try {
+        mutationResult = await registerUser({
+          variables: {
+            displayName: name,
+          },
+        });
+      } catch (err) {
+        console.log(err);
+      }
+
+      const {data, errors} = mutationResult;
+
+      if (errors) {
+        console.log('Bye bye: ' + errors);
+      } else {
+        console.log('data:', data);
+      }
+    };
+    main();
+  }, [registerUser]);
   return (
     <Background>
       <View style={styles.titleview}>

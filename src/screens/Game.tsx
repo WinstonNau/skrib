@@ -1,30 +1,7 @@
 import React, {memo} from 'react';
 import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
-import {io} from 'socket.io-client';
-
-const socket = io('https://skrib-socket.herokuapp.com');
-
-socket.on('connect', () => {
-  console.log(
-    'Socket: ' + socket.id + ' is now successfully connected to the server'
-  );
-});
-
-socket.on('disconnect', (reason) => {
-  if (
-    reason === 'ping timeout' ||
-    reason === 'transport close' ||
-    reason === 'transport error'
-  ) {
-    // if the socket wasn't forcibly disconnected
-    socket.connect();
-  }
-});
-
-socket.on('test', () => {
-  console.log('TEST');
-});
+import socket from '../components/socket';
 
 const Drawing = () => {
   let canvas: RNSketchCanvas | null = null;

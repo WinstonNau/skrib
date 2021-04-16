@@ -1,7 +1,7 @@
 import React, {memo} from 'react';
 import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
-import socket from '../components/socket';
+import socket from '../lib/socket';
 
 const Drawing = () => {
   let canvas: RNSketchCanvas | null = null;

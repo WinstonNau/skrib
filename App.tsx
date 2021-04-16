@@ -3,14 +3,9 @@ import {PermissionsAndroid, Platform} from 'react-native';
 import {Provider} from 'react-native-paper';
 import App from './src';
 import {theme} from './src/core/theme';
-import auth from '@react-native-firebase/auth';
-import {
-  ApolloProvider,
-  ApolloClient,
-  InMemoryCache,
-  createHttpLink,
-} from '@apollo/client';
-import {setContext} from '@apollo/client/link/context';
+import {ApolloProvider} from '@apollo/client';
+
+import client from './src/lib/apollo';
 
 const requestAndroidMicrophonePermission = async () => {
   try {

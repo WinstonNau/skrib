@@ -1,11 +1,10 @@
-import React, {useRef, useEffect, memo} from 'react';
-import {Animated, StyleSheet, Button, View, Text} from 'react-native';
+import React, {memo, useEffect, useRef} from 'react';
+import {Animated, Button, StyleSheet, Text, View} from 'react-native';
 
 import {Navigation} from '../types';
 import Background from '../components/Background';
 import {gql, useMutation} from '@apollo/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getMainDefinition} from '@apollo/client/utilities';
 
 const FadeInView = (props: any) => {
   const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0

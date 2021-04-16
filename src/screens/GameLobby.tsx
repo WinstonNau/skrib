@@ -9,7 +9,7 @@ import Modal from 'react-native-modal';
 import {getStatusBarHeight} from 'react-native-status-bar-height';
 import {gql, useMutation, useQuery} from '@apollo/client';
 import {TextInput} from 'react-native-paper';
-import socket from '../components/socket';
+import socket from '../lib/socket';
 
 //TODO: Notification from socket.io to update the GameLobby, when a new player joins
 

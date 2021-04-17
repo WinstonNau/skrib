@@ -26,18 +26,40 @@ let gameId: any;
 let gameTotal: any;
 let gamePlayers: any;
 
+interface JoinGameResp {
+  joinGame: {
+    game: {
+      id: string;
+      gamePlayersByGameId: {
+        nodes: {
+          playerByPlayerId: {
+            displayName: string;
+          };
+        }[];
+        totalCount: number;
+      };
+    };
+  };
+}
+
+interface GetUsernameResp {
+  playerById: {
+    displayName: string;
+  };
+}
+
 const JOIN_GAME = gql`
-  mutation MyMutation {
+  mutation JoinGame {
     joinGame(input: {}) {
       game {
+        id
         gamePlayersByGameId {
-          totalCount
           nodes {
             playerByPlayerId {
               displayName
             }
-            gameId
           }
+          totalCount
         }
       }
     }
@@ -58,14 +80,14 @@ socket.on('playerDisconnect', (game, playerId) => {
 
 const getUsernameById = (playerId: any) => {
   const GET_USERNAME = gql`
-    query MyQuery2($id: UUID!) {
+    query GetUsernameById($id: UUID!) {
       playerById(id: $id) {
         displayName
       }
     }
   `;
 
-  const {loading, error, data} = useQuery(GET_USERNAME, {
+  const {loading, error, data} = useQuery<GetUsernameResp>(GET_USERNAME, {
     variables: {
       id: playerId,
     },
@@ -75,45 +97,49 @@ const getUsernameById = (playerId: any) => {
     return error;
   }
 
-  return data.playerById.displayName;
+  return data?.playerById.displayName;
 };
 
 const GameLobby = ({navigation}: Props) => {
-  const [joinGame] = useMutation(JOIN_GAME);
+  const [joinGame] = useMutation<JoinGameResp>(JOIN_GAME);
 
   useEffect(() => {
     const main = async () => {
       console.log('in onFinish');
 
-      let mutationResult: any;
       try {
-        mutationResult = await joinGame();
+        const mutationResult = await joinGame();
         console.log('Joined successfully');
+
+        const {data, errors} = mutationResult;
+        if (data) {
+          const {id, gamePlayersByGameId} = data.joinGame.game;
+          const {totalCount, nodes} = gamePlayersByGameId;
+
+          gameId = id;
+          gameData = data;
+          gameTotal = totalCount;
+          gamePlayers = nodes;
+
+          console.log(gameId, gameTotal, JSON.stringify(gamePlayers));
+        }
+
+        if (errors) {
+          console.log('Bye bye: ' + errors);
+        } else {
+          console.log('data:', JSON.stringify(data, undefined, 2));
+        }
+        socket.emit('playerJoined', gameId);
       } catch (err) {
         console.log('Error catched:::', err);
       }
-
-      const {data, errors} = mutationResult;
-      gameData = data;
-      gameId = data.joinGame.game.gamePlayersByGameId.nodes.gameId;
-      gameTotal = data.joinGame.game.gamePlayersByGameId.totalCount;
-      gamePlayers =
-        data.joinGame.game.gamePlayersByGameId.nodes.playerByPlayerId
-          .displayName;
-
-      if (errors) {
-        console.log('Bye bye: ' + errors);
-      } else {
-        console.log('data:', data);
-      }
-      socket.emit('playerJoined', gameId);
     };
     main();
   }, [joinGame]);
 
-  //console.log(getUsernameById('69dc043d-b227-4199-b443-113e8a3756cc'));
+  console.log(getUsernameById('69dc043d-b227-4199-b443-113e8a3756cc'));
 
-  socket.on('newPlayer', (gameId) => {
+  socket.on('newPlayer', (gameId, playerId) => {
     if (gameData.joinGame.game.gamePlayersByGameId.nodes.gameId === gameId) {
     }
   });

@@ -1,5 +1,5 @@
 import React, {memo, useEffect, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {FlatList, StyleSheet, Text, View} from 'react-native';
 import Background from '../components/Background';
 import Header from '../components/Header';
 import Button from '../components/Button';
@@ -7,11 +7,10 @@ import BackButton from '../components/BackButton';
 import {Navigation} from '../types';
 import Modal from 'react-native-modal';
 import {getStatusBarHeight} from 'react-native-status-bar-height';
-import {gql, useMutation, useQuery} from '@apollo/client';
+import {gql, useMutation} from '@apollo/client';
 import {TextInput} from 'react-native-paper';
 import socket from '../lib/socket';
-
-//TODO: Notification from socket.io to update the GameLobby, when a new player joins
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Props = {
   navigation: Navigation;
@@ -21,10 +20,12 @@ type Props = {
 //if totalCount = 1, which means that the joined person is the first one in the lobby: Enable Start and Settings Button
 //start with at least >3 people
 
-let gameData: any;
-let gameId: any;
-let gameTotal: any;
+//let gameData: JoinGameResp;
+let gameIdG: string;
+let gameTotal: number;
 let gamePlayers: any;
+let playerIdG: any;
+let playerUsernameG: string | null;
 
 interface JoinGameResp {
   joinGame: {
@@ -34,6 +35,7 @@ interface JoinGameResp {
         nodes: {
           playerByPlayerId: {
             displayName: string;
+            id: string;
           };
         }[];
         totalCount: number;
@@ -48,6 +50,25 @@ interface GetUsernameResp {
   };
 }
 
+interface LeaveGameResp {
+  leaveGame: {
+    clientMutationId: string;
+  };
+}
+
+// interface GetPlayerIdResp {
+//   currentPlayer: {
+//     player: {
+//       id: string;
+//     };
+//   };
+// }
+
+interface User {
+  userId: string;
+  username: string;
+}
+
 const JOIN_GAME = gql`
   mutation JoinGame {
     joinGame(input: {}) {
@@ -57,6 +78,7 @@ const JOIN_GAME = gql`
           nodes {
             playerByPlayerId {
               displayName
+              id
             }
           }
           totalCount
@@ -66,42 +88,91 @@ const JOIN_GAME = gql`
   }
 `;
 
-socket.on('newPlayer', (game, playerId) => {
-  if (gameId === game) {
-    //Add the username to the list
-  }
-});
+// const GET_PLAYER_ID = gql`
+//   mutation GetPlayerId {
+//     currentPlayer(input: {}) {
+//       player {
+//         id
+//       }
+//     }
+//   }
+// `;
 
-socket.on('playerDisconnect', (game, playerId) => {
-  if (gameId === game) {
-    //Delete the username from the list
-  }
-});
+// const GetPlayerId = async () => {
+//   const [getPlayerId] = useMutation<GetPlayerIdResp>(GET_PLAYER_ID);
+//   console.log('in GetPlayerId');
+//
+//   try {
+//     let mutationResult = await getPlayerId();
+//     const {data, errors} = mutationResult;
+//
+//     if (errors) {
+//       console.log('mutationResult error in GetPlayerId');
+//     } else {
+//       console.log('PlayerIdG =', (playerIdG = data?.currentPlayer.player.id));
+//     }
+//   } catch (e) {
+//     console.log('GetPlayerId error:', e);
+//   }
+// };
 
-const getUsernameById = (playerId: any) => {
-  const GET_USERNAME = gql`
-    query GetUsernameById($id: UUID!) {
-      playerById(id: $id) {
-        displayName
-      }
+// const useGetUsernameById = (playerId: any) => {
+//   const GET_USERNAME = gql`
+//     query GetUsernameById($id: UUID!) {
+//       playerById(id: $id) {
+//         displayName
+//       }
+//     }
+//   `;
+//
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   const {loading, error, data} = useQuery<GetUsernameResp>(GET_USERNAME, {
+//     variables: {
+//       id: playerId,
+//     },
+//   });
+//
+//   if (error) {
+//     console.log(error);
+//   } else {
+//     return data?.playerById.displayName;
+//   }
+// };
+
+const LEAVE_GAME = gql`
+  mutation LeaveGame($gameId: UUID!) {
+    leaveGame(input: {gameId: $gameId}) {
+      clientMutationId
     }
-  `;
-
-  const {loading, error, data} = useQuery<GetUsernameResp>(GET_USERNAME, {
-    variables: {
-      id: playerId,
-    },
-  });
-
-  if (error) {
-    return error;
   }
-
-  return data?.playerById.displayName;
-};
+`;
 
 const GameLobby = ({navigation}: Props) => {
   const [joinGame] = useMutation<JoinGameResp>(JOIN_GAME);
+  const [leaveGame] = useMutation<LeaveGameResp>(LEAVE_GAME);
+
+  const userLeavesGame = async () => {
+    console.log('in userLeavesGame');
+
+    let mutationResult: any;
+    try {
+      mutationResult = await leaveGame({
+        variables: {
+          gameId: gameIdG,
+        },
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    const {data, errors} = mutationResult;
+
+    if (errors) {
+      console.log('Bye bye: ' + errors);
+    } else {
+      console.log('data:', data);
+    }
+  };
 
   useEffect(() => {
     const main = async () => {
@@ -116,42 +187,89 @@ const GameLobby = ({navigation}: Props) => {
           const {id, gamePlayersByGameId} = data.joinGame.game;
           const {totalCount, nodes} = gamePlayersByGameId;
 
-          gameId = id;
-          gameData = data;
+          if (totalCount === 1) {
+            setSettingsEnabled(true);
+            setStartButtonEnabled(true);
+          }
+
+          gameIdG = id;
+          //gameData = data;
           gameTotal = totalCount;
           gamePlayers = nodes;
+          playerUsernameG = await AsyncStorage.getItem('user.name');
+          nodes.forEach((u) => {
+            if (u.playerByPlayerId.id === id) {
+              playerUsernameG = u.playerByPlayerId.displayName;
+            }
+          });
 
-          console.log(gameId, gameTotal, JSON.stringify(gamePlayers));
+          console.log(
+            'Game ID',
+            gameIdG,
+            'Total Players:',
+            gameTotal,
+            'Players:',
+            JSON.stringify(gamePlayers),
+            'Player ID:',
+            playerIdG,
+            'Player Username:',
+            playerUsernameG
+          );
         }
 
         if (errors) {
           console.log('Bye bye: ' + errors);
         } else {
           console.log('data:', JSON.stringify(data, undefined, 2));
+          socket.emit('playerJoined', gameIdG, playerIdG, playerUsernameG);
         }
-        socket.emit('playerJoined', gameId);
       } catch (err) {
         console.log('Error catched:::', err);
       }
     };
     main();
+    // return () => {
+    //   //calls leaveGameMutation
+    //   userLeavesGame();
+    // };
   }, [joinGame]);
-
-  console.log(getUsernameById('69dc043d-b227-4199-b443-113e8a3756cc'));
-
-  socket.on('newPlayer', (gameId, playerId) => {
-    if (gameData.joinGame.game.gamePlayersByGameId.nodes.gameId === gameId) {
-    }
-  });
 
   //change to false as default value after/while testing
 
-  const [settingsEnabled, setSettingsEnabled] = useState(true);
-  const [startButtonEnabled, setStartButtonEnabled] = useState(true);
+  const [settingsEnabled, setSettingsEnabled] = useState(false);
+  const [startButtonEnabled, setStartButtonEnabled] = useState(false);
 
-  const [numberOfRounds, setNumberOfRounds] = useState('');
+  const [numberOfRounds, setNumberOfRounds] = useState('3');
   const [isModalVisible, setModalVisible] = useState(false);
   const [isAlertVisible, setAlertVisible] = useState(false);
+
+  const [users, setUsernames] = useState([
+    {userId: '69dc043d-b227-4199-b443-113e8a3756cc', username: 'Test19'},
+    {userId: '29375283-b324-vb88-29fh-230fdi38fnso', username: 'Test38472643'},
+  ] as Array<User>);
+
+  socket.on(
+    'newPlayer',
+    (game: string, playerId: string, playerUsername: string) => {
+      if (gameIdG === game) {
+        //Adds the username to the list
+        setUsernames(
+          users.concat([
+            {
+              userId: playerId,
+              username: playerUsername,
+            },
+          ])
+        );
+      }
+    }
+  );
+  socket.on('playerDisconnect', (game, playerId) => {
+    if (gameIdG === game) {
+      //Deletes the username from the list
+      setUsernames(users.filter((u) => u.userId !== playerId));
+    }
+  });
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -216,12 +334,12 @@ const GameLobby = ({navigation}: Props) => {
           <Text style={styles.contentTitle}>Are you sure?</Text>
           <View style={styles.rowView}>
             <Button
-              testID={'back-button'}
               style={{flex: 1}}
               //disconnect the user from the Game
               onPress={() => {
                 toggleAlert();
-                socket.emit('playerLeave', gameId);
+                socket.emit('playerLeave', gameIdG, playerIdG);
+                userLeavesGame();
                 navigation.navigate('Dashboard');
               }}>
               Back
@@ -232,6 +350,10 @@ const GameLobby = ({navigation}: Props) => {
           </View>
         </View>
       </Modal>
+      <FlatList
+        data={users.map((u) => ({key: u.username}))}
+        renderItem={({item}) => <Text style={styles.item}>{item.key}</Text>}
+      />
       <View style={styles.rowView}>
         <Button
           disabled={!startButtonEnabled}
@@ -257,6 +379,11 @@ const styles = StyleSheet.create({
   startButton: {bottom: 20},
   settingsTO: {
     flex: 1,
+  },
+  item: {
+    padding: 20,
+    fontSize: 18,
+    height: 50,
   },
   rowView: {flexDirection: 'row', justifyContent: 'flex-end'},
   content: {

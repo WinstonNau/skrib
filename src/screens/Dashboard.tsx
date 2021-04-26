@@ -53,9 +53,17 @@ type Props = {
   navigation: Navigation;
 };
 
+interface RegisterUserResp {
+  registerPlayer: {
+    player: {
+      createdAt: string;
+    };
+  };
+}
+
 const MainScreen = ({navigation}: {navigation: Navigation}) => {
   const REGISTER_USER = gql`
-    mutation MyMutation($displayName: String!) {
+    mutation RegisterPlayer($displayName: String!) {
       registerPlayer(input: {displayName: $displayName}) {
         player {
           createdAt
@@ -64,12 +72,12 @@ const MainScreen = ({navigation}: {navigation: Navigation}) => {
     }
   `;
 
-  const [registerUser] = useMutation(REGISTER_USER);
+  const [registerUser] = useMutation<RegisterUserResp>(REGISTER_USER);
   useEffect(() => {
     const main = async () => {
       console.log('In onFinish');
 
-      console.log(AsyncStorage.getItem('user.name'));
+      console.log(await AsyncStorage.getItem('user.name'));
 
       let name = await AsyncStorage.getItem('user.name');
 

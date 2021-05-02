@@ -345,10 +345,10 @@ const GameLobby = ({navigation}: Props) => {
             <Button
               style={{flex: 1}}
               //disconnect the user from the Game
-              onPress={() => {
-                toggleAlert();
+              onPress={async () => {
                 socket.emit('playerLeave', gameIdG, playerIdG);
-                userLeavesGame();
+                await userLeavesGame();
+                toggleAlert();
                 navigation.navigate('Dashboard');
               }}>
               Back

@@ -3,6 +3,8 @@ import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
 import socket from '../lib/socket';
 
+let drawer = false;
+
 const Drawing = () => {
   let canvas: RNSketchCanvas | null = null;
 
@@ -22,90 +24,146 @@ const Drawing = () => {
     console.log('Undo successful');
   });
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={{flex: 1, flexDirection: 'row'}}>
-        <RNSketchCanvas
-          onStrokeEnd={(path) => {
-            console.log('onStrokeEnd:', JSON.stringify(path));
-            socket.emit('newPathDrawn', path);
-          }}
-          ref={(ref: RNSketchCanvas) => (canvas = ref)}
-          // onSketchSaved={(success, path) => {
-          //   console.log(path);
-          //   ImgToBase64.getBase64String('file://' + path)
-          //     .then((base64String) => console.log(base64String))
-          //     .catch((err) => console.log(err));
-          // }}
-          containerStyle={{backgroundColor: 'transparent', flex: 1}}
-          canvasStyle={{backgroundColor: 'transparent', flex: 1}}
-          defaultStrokeIndex={0}
-          defaultStrokeWidth={5}
-          /*closeComponent={
-                <View style={styles.functionButton}>
-                  <Text style={styles.white}>Close</Text>
-                </View>
-              }*/
-          undoComponent={
-            <View style={styles.functionButton}>
-              <Text style={styles.white}>Undo</Text>
-            </View>
-          }
-          onUndoPressed={() => {
-            socket.emit('undoReq');
-          }}
-          clearComponent={
-            <View style={styles.functionButton}>
-              <Text style={styles.white}>Clear</Text>
-            </View>
-          }
-          onClearPressed={() => {
-            socket.emit('clearReq');
-          }}
-          eraseComponent={
-            <View style={styles.functionButton}>
-              <Text style={styles.white}>Eraser</Text>
-            </View>
-          }
-          strokeComponent={(color) => (
-            <View
-              style={[{backgroundColor: color}, styles.strokeColorButton]}
-            />
-          )}
-          strokeSelectedComponent={(color) => {
-            return (
-              <View
-                style={[
-                  {backgroundColor: color, borderWidth: 2},
-                  styles.strokeColorButton,
-                ]}
-              />
-            );
-          }}
-          strokeWidthComponent={(w) => {
-            return (
-              <View style={styles.strokeWidthButton}>
-                <View style={style(w).default} />
+  if (drawer) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={{flex: 1, flexDirection: 'row'}}>
+          <RNSketchCanvas
+            onStrokeEnd={(path) => {
+              console.log('onStrokeEnd:', JSON.stringify(path));
+              socket.emit('newPathDrawn', path);
+            }}
+            ref={(ref: RNSketchCanvas) => (canvas = ref)}
+            containerStyle={{backgroundColor: 'transparent', flex: 1}}
+            canvasStyle={{backgroundColor: 'transparent', flex: 1}}
+            defaultStrokeIndex={0}
+            defaultStrokeWidth={5}
+            undoComponent={
+              <View style={styles.functionButton}>
+                <Text style={styles.white}>Undo</Text>
               </View>
-            );
-          }}
-          saveComponent={
-            <View style={styles.functionButton}>
-              <Text style={styles.white}>Save</Text>
-            </View>
-          }
-          savePreference={() => {
-            return {
-              folder: 'RNSketchCanvas',
-              filename: String(Math.ceil(Math.random() * 100000000)),
-              transparent: false,
-              imageType: 'png',
-            };
-          }}
-        />
-      </View>
-    </SafeAreaView>
-  );
+            }
+            onUndoPressed={() => {
+              socket.emit('undoReq');
+            }}
+            clearComponent={
+              <View style={styles.functionButton}>
+                <Text style={styles.white}>Clear</Text>
+              </View>
+            }
+            onClearPressed={() => {
+              socket.emit('clearReq');
+            }}
+            eraseComponent={
+              <View style={styles.functionButton}>
+                <Text style={styles.white}>Eraser</Text>
+              </View>
+            }
+            strokeComponent={(color) => (
+              <View
+                style={[{backgroundColor: color}, styles.strokeColorButton]}
+              />
+            )}
+            strokeSelectedComponent={(color) => {
+              return (
+                <View
+                  style={[
+                    {backgroundColor: color, borderWidth: 2},
+                    styles.strokeColorButton,
+                  ]}
+                />
+              );
+            }}
+            strokeWidthComponent={(w) => {
+              return (
+                <View style={styles.strokeWidthButton}>
+                  <View style={style(w).default} />
+                </View>
+              );
+            }}
+            // savePreference={() => {
+            //   return {
+            //     folder: 'RNSketchCanvas',
+            //     filename: String(Math.ceil(Math.random() * 100000000)),
+            //     transparent: false,
+            //     imageType: 'png',
+            //   };
+            // }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  } else {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={{flex: 1, flexDirection: 'row'}}>
+          <RNSketchCanvas
+            // onStrokeEnd={(path) => {
+            //   console.log('onStrokeEnd:', JSON.stringify(path));
+            //   socket.emit('newPathDrawn', path);
+            // }}
+            ref={(ref: RNSketchCanvas) => (canvas = ref)}
+            //TODO: Figure out if every 4 commented methods are needed to be commented in order to not being able to draw on the canvas
+            // containerStyle={{backgroundColor: 'transparent', flex: 1}}
+            // canvasStyle={{backgroundColor: 'transparent', flex: 1}}
+            // defaultStrokeIndex={0}
+            // defaultStrokeWidth={5}
+            // undoComponent={
+            //   <View style={styles.functionButton}>
+            //     <Text style={styles.white}>Undo</Text>
+            //   </View>
+            // }
+            onUndoPressed={() => {
+              socket.emit('undoReq');
+            }}
+            // clearComponent={
+            //   <View style={styles.functionButton}>
+            //     <Text style={styles.white}>Clear</Text>
+            //   </View>
+            // }
+            onClearPressed={() => {
+              socket.emit('clearReq');
+            }}
+            // eraseComponent={
+            //   <View style={styles.functionButton}>
+            //     <Text style={styles.white}>Eraser</Text>
+            //   </View>
+            // }
+            // strokeComponent={(color) => (
+            //   <View
+            //     style={[{backgroundColor: color}, styles.strokeColorButton]}
+            //   />
+            // )}
+            // strokeSelectedComponent={(color) => {
+            //   return (
+            //     <View
+            //       style={[
+            //         {backgroundColor: color, borderWidth: 2},
+            //         styles.strokeColorButton,
+            //       ]}
+            //     />
+            //   );
+            // }}
+            // strokeWidthComponent={(w) => {
+            //   return (
+            //     <View style={styles.strokeWidthButton}>
+            //       <View style={style(w).default} />
+            //     </View>
+            //   );
+            // }}
+            // savePreference={() => {
+            //   return {
+            //     folder: 'RNSketchCanvas',
+            //     filename: String(Math.ceil(Math.random() * 100000000)),
+            //     transparent: false,
+            //     imageType: 'png',
+            //   };
+            // }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 };
 
 const style = (w: number) =>

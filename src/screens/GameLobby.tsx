@@ -198,9 +198,19 @@ const GameLobby = ({navigation}: Props) => {
           gamePlayers = nodes;
           playerUsernameG = await AsyncStorage.getItem('user.name');
           nodes.forEach((u) => {
-            if (u.playerByPlayerId.id === id) {
-              playerUsernameG = u.playerByPlayerId.displayName;
-            }
+            console.log(
+              'in nodes.forEach:',
+              u.playerByPlayerId.id,
+              u.playerByPlayerId.displayName
+            );
+            setUsernames(
+              users.concat([
+                {
+                  userId: u.playerByPlayerId.id,
+                  username: u.playerByPlayerId.displayName,
+                },
+              ])
+            );
           });
 
           console.log(
@@ -244,8 +254,7 @@ const GameLobby = ({navigation}: Props) => {
   const [isAlertVisible, setAlertVisible] = useState(false);
 
   const [users, setUsernames] = useState([
-    {userId: '69dc043d-b227-4199-b443-113e8a3756cc', username: 'Test19'},
-    {userId: '29375283-b324-vb88-29fh-230fdi38fnso', username: 'Test38472643'},
+    {userId: '69dc043d-b227-4199-b443-113e8a3756cc', username: 'FirstNameTest'},
   ] as Array<User>);
 
   socket.on(
@@ -279,10 +288,10 @@ const GameLobby = ({navigation}: Props) => {
     setAlertVisible(!isAlertVisible);
   };
 
-  if (gameTotal === 1) {
-    setSettingsEnabled(true);
-    setStartButtonEnabled(true);
-  }
+  // if (gameTotal === 1) {
+  //   setSettingsEnabled(true);
+  //   setStartButtonEnabled(true);
+  // }
 
   return (
     <Background>

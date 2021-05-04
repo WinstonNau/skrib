@@ -11,51 +11,10 @@ interface Node {
     nodeId: ID!
 }
 
-"The output of our create `Game` mutation."
-type CreateGamePayload {
+"The output of our `changeGameStatus` mutation."
+type ChangeGameStatusPayload {
     "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
     clientMutationId: String
-    "The `Game` that was created by this mutation."
-    game: Game
-    "An edge for our `Game`. May be used by Relay 1."
-    gameEdge(
-        "The method to use when ordering `Game`."
-        orderBy: [GamesOrderBy!] = [PRIMARY_KEY_ASC]
-    ): GamesEdge
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our create `GamePlayer` mutation."
-type CreateGamePlayerPayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    "Reads a single `Game` that is related to this `GamePlayer`."
-    gameByGameId: Game
-    "The `GamePlayer` that was created by this mutation."
-    gamePlayer: GamePlayer
-    "An edge for our `GamePlayer`. May be used by Relay 1."
-    gamePlayerEdge(
-        "The method to use when ordering `GamePlayer`."
-        orderBy: [GamePlayersOrderBy!] = [PRIMARY_KEY_ASC]
-    ): GamePlayersEdge
-    "Reads a single `Player` that is related to this `GamePlayer`."
-    playerByPlayerId: Player
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our create `Player` mutation."
-type CreatePlayerPayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    "The `Player` that was created by this mutation."
-    player: Player
-    "An edge for our `Player`. May be used by Relay 1."
-    playerEdge(
-        "The method to use when ordering `Player`."
-        orderBy: [PlayersOrderBy!] = [PRIMARY_KEY_ASC]
-    ): PlayersEdge
     "Our root query field type. Allows us to run any query from our mutation payload."
     query: Query
 }
@@ -64,58 +23,6 @@ type CreatePlayerPayload {
 type CurrentPlayerPayload {
     "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
     clientMutationId: String
-    player: Player
-    "An edge for our `Player`. May be used by Relay 1."
-    playerEdge(
-        "The method to use when ordering `Player`."
-        orderBy: [PlayersOrderBy!] = [PRIMARY_KEY_ASC]
-    ): PlayersEdge
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our delete `Game` mutation."
-type DeleteGamePayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    deletedGameId: ID
-    "The `Game` that was deleted by this mutation."
-    game: Game
-    "An edge for our `Game`. May be used by Relay 1."
-    gameEdge(
-        "The method to use when ordering `Game`."
-        orderBy: [GamesOrderBy!] = [PRIMARY_KEY_ASC]
-    ): GamesEdge
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our delete `GamePlayer` mutation."
-type DeleteGamePlayerPayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    deletedGamePlayerId: ID
-    "Reads a single `Game` that is related to this `GamePlayer`."
-    gameByGameId: Game
-    "The `GamePlayer` that was deleted by this mutation."
-    gamePlayer: GamePlayer
-    "An edge for our `GamePlayer`. May be used by Relay 1."
-    gamePlayerEdge(
-        "The method to use when ordering `GamePlayer`."
-        orderBy: [GamePlayersOrderBy!] = [PRIMARY_KEY_ASC]
-    ): GamePlayersEdge
-    "Reads a single `Player` that is related to this `GamePlayer`."
-    playerByPlayerId: Player
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our delete `Player` mutation."
-type DeletePlayerPayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    deletedPlayerId: ID
-    "The `Player` that was deleted by this mutation."
     player: Player
     "An edge for our `Player`. May be used by Relay 1."
     playerEdge(
@@ -238,118 +145,39 @@ type JoinGamePayload {
     query: Query
 }
 
+"The output of our `leaveGame` mutation."
+type LeaveGamePayload {
+    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
+    clientMutationId: String
+    "Our root query field type. Allows us to run any query from our mutation payload."
+    query: Query
+}
+
 "The root mutation type which contains root level fields which mutate data."
 type Mutation {
-    "Creates a single `Game`."
-    createGame(
+    changeGameStatus(
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: CreateGameInput!
-    ): CreateGamePayload
-    "Creates a single `GamePlayer`."
-    createGamePlayer(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: CreateGamePlayerInput!
-    ): CreateGamePlayerPayload
-    "Creates a single `Player`."
-    createPlayer(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: CreatePlayerInput!
-    ): CreatePlayerPayload
+        input: ChangeGameStatusInput!
+    ): ChangeGameStatusPayload
     "Get current logged in player"
     currentPlayer(
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: CurrentPlayerInput!
     ): CurrentPlayerPayload
-    "Deletes a single `Game` using its globally unique id."
-    deleteGame(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeleteGameInput!
-    ): DeleteGamePayload
-    "Deletes a single `Game` using a unique key."
-    deleteGameById(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeleteGameByIdInput!
-    ): DeleteGamePayload
-    "Deletes a single `GamePlayer` using its globally unique id."
-    deleteGamePlayer(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeleteGamePlayerInput!
-    ): DeleteGamePlayerPayload
-    "Deletes a single `GamePlayer` using a unique key."
-    deleteGamePlayerByGameIdAndPlayerId(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeleteGamePlayerByGameIdAndPlayerIdInput!
-    ): DeleteGamePlayerPayload
-    "Deletes a single `Player` using its globally unique id."
-    deletePlayer(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeletePlayerInput!
-    ): DeletePlayerPayload
-    "Deletes a single `Player` using a unique key."
-    deletePlayerByDisplayName(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeletePlayerByDisplayNameInput!
-    ): DeletePlayerPayload
-    "Deletes a single `Player` using a unique key."
-    deletePlayerByFirebaseUid(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeletePlayerByFirebaseUidInput!
-    ): DeletePlayerPayload
-    "Deletes a single `Player` using a unique key."
-    deletePlayerById(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: DeletePlayerByIdInput!
-    ): DeletePlayerPayload
     "Player joins a game room"
     joinGame(
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: JoinGameInput!
     ): JoinGamePayload
+    leaveGame(
+        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
+        input: LeaveGameInput!
+    ): LeaveGamePayload
     "Registers a single user from firebase_uid"
     registerPlayer(
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: RegisterPlayerInput!
     ): RegisterPlayerPayload
-    "Updates a single `Game` using its globally unique id and a patch."
-    updateGame(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdateGameInput!
-    ): UpdateGamePayload
-    "Updates a single `Game` using a unique key and a patch."
-    updateGameById(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdateGameByIdInput!
-    ): UpdateGamePayload
-    "Updates a single `GamePlayer` using its globally unique id and a patch."
-    updateGamePlayer(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdateGamePlayerInput!
-    ): UpdateGamePlayerPayload
-    "Updates a single `GamePlayer` using a unique key and a patch."
-    updateGamePlayerByGameIdAndPlayerId(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdateGamePlayerByGameIdAndPlayerIdInput!
-    ): UpdateGamePlayerPayload
-    "Updates a single `Player` using its globally unique id and a patch."
-    updatePlayer(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdatePlayerInput!
-    ): UpdatePlayerPayload
-    "Updates a single `Player` using a unique key and a patch."
-    updatePlayerByDisplayName(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdatePlayerByDisplayNameInput!
-    ): UpdatePlayerPayload
-    "Updates a single `Player` using a unique key and a patch."
-    updatePlayerByFirebaseUid(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdatePlayerByFirebaseUidInput!
-    ): UpdatePlayerPayload
-    "Updates a single `Player` using a unique key and a patch."
-    updatePlayerById(
-        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
-        input: UpdatePlayerByIdInput!
-    ): UpdatePlayerPayload
 }
 
 "Information about pagination in a connection."
@@ -509,55 +337,6 @@ type RegisterPlayerPayload {
     query: Query
 }
 
-"The output of our update `Game` mutation."
-type UpdateGamePayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    "The `Game` that was updated by this mutation."
-    game: Game
-    "An edge for our `Game`. May be used by Relay 1."
-    gameEdge(
-        "The method to use when ordering `Game`."
-        orderBy: [GamesOrderBy!] = [PRIMARY_KEY_ASC]
-    ): GamesEdge
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our update `GamePlayer` mutation."
-type UpdateGamePlayerPayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    "Reads a single `Game` that is related to this `GamePlayer`."
-    gameByGameId: Game
-    "The `GamePlayer` that was updated by this mutation."
-    gamePlayer: GamePlayer
-    "An edge for our `GamePlayer`. May be used by Relay 1."
-    gamePlayerEdge(
-        "The method to use when ordering `GamePlayer`."
-        orderBy: [GamePlayersOrderBy!] = [PRIMARY_KEY_ASC]
-    ): GamePlayersEdge
-    "Reads a single `Player` that is related to this `GamePlayer`."
-    playerByPlayerId: Player
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
-"The output of our update `Player` mutation."
-type UpdatePlayerPayload {
-    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
-    clientMutationId: String
-    "The `Player` that was updated by this mutation."
-    player: Player
-    "An edge for our `Player`. May be used by Relay 1."
-    playerEdge(
-        "The method to use when ordering `Player`."
-        orderBy: [PlayersOrderBy!] = [PRIMARY_KEY_ASC]
-    ): PlayersEdge
-    "Our root query field type. Allows us to run any query from our mutation payload."
-    query: Query
-}
-
 "Methods to use when ordering `GamePlayer`."
 enum GamePlayersOrderBy {
     CREATED_AT_ASC
@@ -617,94 +396,17 @@ enum PlayersOrderBy {
     UPDATED_AT_DESC
 }
 
-"All input for the create `Game` mutation."
-input CreateGameInput {
+"All input for the `changeGameStatus` mutation."
+input ChangeGameStatusInput {
     "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
     clientMutationId: String
-    "The `Game` to be created by this mutation."
-    game: GameInput!
-}
-
-"All input for the create `GamePlayer` mutation."
-input CreateGamePlayerInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "The `GamePlayer` to be created by this mutation."
-    gamePlayer: GamePlayerInput!
-}
-
-"All input for the create `Player` mutation."
-input CreatePlayerInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "The `Player` to be created by this mutation."
-    player: PlayerInput!
+    gameId: UUID!
 }
 
 "All input for the `currentPlayer` mutation."
 input CurrentPlayerInput {
     "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
     clientMutationId: String
-}
-
-"All input for the `deleteGameById` mutation."
-input DeleteGameByIdInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    id: UUID!
-}
-
-"All input for the `deleteGame` mutation."
-input DeleteGameInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "The globally unique `ID` which will identify a single `Game` to be deleted."
-    nodeId: ID!
-}
-
-"All input for the `deleteGamePlayerByGameIdAndPlayerId` mutation."
-input DeleteGamePlayerByGameIdAndPlayerIdInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    gameId: UUID!
-    playerId: UUID!
-}
-
-"All input for the `deleteGamePlayer` mutation."
-input DeleteGamePlayerInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "The globally unique `ID` which will identify a single `GamePlayer` to be deleted."
-    nodeId: ID!
-}
-
-"All input for the `deletePlayerByDisplayName` mutation."
-input DeletePlayerByDisplayNameInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    displayName: String!
-}
-
-"All input for the `deletePlayerByFirebaseUid` mutation."
-input DeletePlayerByFirebaseUidInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    firebaseUid: String!
-}
-
-"All input for the `deletePlayerById` mutation."
-input DeletePlayerByIdInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    id: UUID!
-}
-
-"All input for the `deletePlayer` mutation."
-input DeletePlayerInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "The globally unique `ID` which will identify a single `Player` to be deleted."
-    nodeId: ID!
 }
 
 "A condition to be used against `Game` object types. All fields are tested for equality and combined with a logical ‘and.’"
@@ -723,26 +425,6 @@ input GameCondition {
     updatedAt: Datetime
 }
 
-"An input for mutations affecting `Game`"
-input GameInput {
-    createdAt: Datetime
-    durationPerWord: IntervalInput
-    id: UUID
-    roundNum: Int
-    status: GameStatus
-    updatedAt: Datetime
-}
-
-"Represents an update to a `Game`. Fields that are set will be updated."
-input GamePatch {
-    createdAt: Datetime
-    durationPerWord: IntervalInput
-    id: UUID
-    roundNum: Int
-    status: GameStatus
-    updatedAt: Datetime
-}
-
 "A condition to be used against `GamePlayer` object types. All fields are tested for equality and combined with a logical ‘and.’"
 input GamePlayerCondition {
     "Checks for equality with the object’s `createdAt` field."
@@ -754,24 +436,6 @@ input GamePlayerCondition {
     "Checks for equality with the object’s `score` field."
     score: Int
     "Checks for equality with the object’s `updatedAt` field."
-    updatedAt: Datetime
-}
-
-"An input for mutations affecting `GamePlayer`"
-input GamePlayerInput {
-    createdAt: Datetime
-    gameId: UUID!
-    playerId: UUID!
-    score: Int
-    updatedAt: Datetime
-}
-
-"Represents an update to a `GamePlayer`. Fields that are set will be updated."
-input GamePlayerPatch {
-    createdAt: Datetime
-    gameId: UUID
-    playerId: UUID
-    score: Int
     updatedAt: Datetime
 }
 
@@ -798,6 +462,13 @@ input JoinGameInput {
     gameId: UUID
 }
 
+"All input for the `leaveGame` mutation."
+input LeaveGameInput {
+    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
+    clientMutationId: String
+    gameId: UUID!
+}
+
 "A condition to be used against `Player` object types. All fields are tested for equality and combined with a logical ‘and.’"
 input PlayerCondition {
     "Checks for equality with the object’s `createdAt` field."
@@ -812,105 +483,11 @@ input PlayerCondition {
     updatedAt: Datetime
 }
 
-"An input for mutations affecting `Player`"
-input PlayerInput {
-    createdAt: Datetime
-    displayName: String!
-    firebaseUid: String!
-    id: UUID
-    updatedAt: Datetime
-}
-
-"Represents an update to a `Player`. Fields that are set will be updated."
-input PlayerPatch {
-    createdAt: Datetime
-    displayName: String
-    firebaseUid: String
-    id: UUID
-    updatedAt: Datetime
-}
-
 "All input for the `registerPlayer` mutation."
 input RegisterPlayerInput {
     "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
     clientMutationId: String
     displayName: String!
-}
-
-"All input for the `updateGameById` mutation."
-input UpdateGameByIdInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "An object where the defined keys will be set on the `Game` being updated."
-    gamePatch: GamePatch!
-    id: UUID!
-}
-
-"All input for the `updateGame` mutation."
-input UpdateGameInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "An object where the defined keys will be set on the `Game` being updated."
-    gamePatch: GamePatch!
-    "The globally unique `ID` which will identify a single `Game` to be updated."
-    nodeId: ID!
-}
-
-"All input for the `updateGamePlayerByGameIdAndPlayerId` mutation."
-input UpdateGamePlayerByGameIdAndPlayerIdInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    gameId: UUID!
-    "An object where the defined keys will be set on the `GamePlayer` being updated."
-    gamePlayerPatch: GamePlayerPatch!
-    playerId: UUID!
-}
-
-"All input for the `updateGamePlayer` mutation."
-input UpdateGamePlayerInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "An object where the defined keys will be set on the `GamePlayer` being updated."
-    gamePlayerPatch: GamePlayerPatch!
-    "The globally unique `ID` which will identify a single `GamePlayer` to be updated."
-    nodeId: ID!
-}
-
-"All input for the `updatePlayerByDisplayName` mutation."
-input UpdatePlayerByDisplayNameInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    displayName: String!
-    "An object where the defined keys will be set on the `Player` being updated."
-    playerPatch: PlayerPatch!
-}
-
-"All input for the `updatePlayerByFirebaseUid` mutation."
-input UpdatePlayerByFirebaseUidInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    firebaseUid: String!
-    "An object where the defined keys will be set on the `Player` being updated."
-    playerPatch: PlayerPatch!
-}
-
-"All input for the `updatePlayerById` mutation."
-input UpdatePlayerByIdInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    id: UUID!
-    "An object where the defined keys will be set on the `Player` being updated."
-    playerPatch: PlayerPatch!
-}
-
-"All input for the `updatePlayer` mutation."
-input UpdatePlayerInput {
-    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
-    clientMutationId: String
-    "The globally unique `ID` which will identify a single `Player` to be updated."
-    nodeId: ID!
-    "An object where the defined keys will be set on the `Player` being updated."
-    playerPatch: PlayerPatch!
 }
 
 

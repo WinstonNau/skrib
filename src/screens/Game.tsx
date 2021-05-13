@@ -1,7 +1,29 @@
-import React, {memo} from 'react';
-import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
+import React, {Component, memo, useEffect, useState} from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
 import socket from '../lib/socket';
+import Button from '../components/Button';
+import Modal from 'react-native-modal';
+import {CountdownCircleTimer} from 'react-native-countdown-circle-timer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import FlashMessage, {showMessage} from 'react-native-flash-message';
+import Voice, {
+  SpeechResultsEvent,
+  SpeechErrorEvent,
+} from '@react-native-community/voice';
+
+let gameIdG: string;
+let playerUsernameG: string;
+let chosenWord: string;
 
 //TODO: Create a clock, so the drawer and the guessers can see the remaining time
 
@@ -161,20 +183,90 @@ class VoiceGuess extends Component<Props, State> {
 const Drawing = () => {
   let canvas: RNSketchCanvas | null = null;
 
-  socket.on('newPath', (path: any) => {
-    //draw the path
-    canvas?.addPath(path);
-    console.log('Received (' + socket.id + '):', path);
+  const [isWordModalVisible, setWordModalVisibility] = useState(true);
+  const [isWaitingModalVisible, setWaitingModalVisibility] = useState(true);
+
+  //TODO: Create a database of words to draw
+  const [choiceOneWord, setChoiceOneWord] = useState('Test eins');
+  const [choiceTwoWord, setChoiceTwoWord] = useState('Test zwei');
+  const [choiceThreeWord, setChoiceThreeWord] = useState('Test drei');
+
+  const [timer, setTimer] = useState(25);
+
+  const [isDrawer, setDrawer] = useState(false);
+
+  const toggleChooseWordModal = () => {
+    setWordModalVisibility(!isWordModalVisible);
+  };
+
+  useEffect(() => {
+    const main = async () => {
+      //"as string" should maybe be removed
+      playerUsernameG = (await AsyncStorage.getItem('user.name')) as string;
+      gameIdG = (await AsyncStorage.getItem('game.id')) as string;
+      console.log(playerUsernameG);
+      console.log(gameIdG);
+      //------------------ Testing
+      if (playerUsernameG === 'Tst5') {
+        setDrawer(true);
+      }
+    };
+    main();
+  }, []);
+
+  socket.on('newPath', (gameId: string, path: any) => {
+    if (gameIdG === gameId) {
+      //draw the path
+      canvas?.addPath(path);
+      console.log('Received (' + socket.id + '):', path);
+    }
   });
 
-  socket.on('clear', () => {
-    canvas?.clear();
-    console.log('Clear successful');
+  socket.on('clear', (gameId: string) => {
+    if (gameIdG === gameId) {
+      //clear the canvas
+      canvas?.clear();
+      console.log('Clear successful');
+    }
   });
 
-  socket.on('undo', () => {
-    canvas?.undo();
-    console.log('Undo successful');
+  socket.on('undo', (gameId: string) => {
+    if (gameIdG === gameId) {
+      //undo the last drawn path
+      canvas?.undo();
+      console.log('Undo successful');
+    }
+  });
+
+  socket.on('wordSelected', (gameId: string, word: string) => {
+    console.log('wordSelected received: ' + gameId, word);
+    if (gameIdG === gameId) {
+      chosenWord = word;
+      console.log(word);
+      setWaitingModalVisibility(false);
+      startTimer(word);
+    }
+  });
+
+  socket.on('playerGuessedWrong', (gameId, guess) => {
+    if (gameIdG === gameId) {
+      showMessage({
+        message: guess,
+        type: 'default',
+      });
+    }
+  });
+
+  socket.on('playerGuessedCorrect', (gameId, playerUsername, guess) => {
+    const main = async () => {
+      if (gameIdG === gameId) {
+        showMessage({
+          message: playerUsername + ' guessed the correct word: ' + guess,
+          type: 'warning',
+        });
+      }
+    };
+    main();
   });
 
   if (drawer) {

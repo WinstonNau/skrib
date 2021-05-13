@@ -20,11 +20,10 @@ type Props = {
 //if totalCount = 1, which means that the joined person is the first one in the lobby: Enable Start and Settings Button
 //start with at least >3 people
 
-//let gameData: JoinGameResp;
 let gameIdG: string;
 let gameTotal: number;
 let gamePlayers: any;
-let playerIdG: any;
+let playerIdG: string;
 let playerUsernameG: string | null;
 
 interface JoinGameResp {
@@ -52,6 +51,12 @@ interface GetUsernameResp {
 
 interface LeaveGameResp {
   leaveGame: {
+    clientMutationId: string;
+  };
+}
+
+interface ChangeGameStatusResp {
+  changeGameStatus: {
     clientMutationId: string;
   };
 }
@@ -147,9 +152,20 @@ const LEAVE_GAME = gql`
   }
 `;
 
+const CHANGE_GAME_STATUS = gql`
+  mutation ChangeGameStatus($gameId: UUID!) {
+    changeGameStatus(input: {gameId: $gameId}) {
+      clientMutationId
+    }
+  }
+`;
+
 const GameLobby = ({navigation}: Props) => {
   const [joinGame] = useMutation<JoinGameResp>(JOIN_GAME);
   const [leaveGame] = useMutation<LeaveGameResp>(LEAVE_GAME);
+  const [changeGameStatus] = useMutation<ChangeGameStatusResp>(
+    CHANGE_GAME_STATUS
+  );
 
   const userLeavesGame = async () => {
     console.log('in userLeavesGame');
@@ -163,6 +179,29 @@ const GameLobby = ({navigation}: Props) => {
       });
     } catch (err) {
       console.log(err);
+    }
+
+    const {data, errors} = mutationResult;
+
+    if (errors) {
+      console.log('Bye bye: ' + errors);
+    } else {
+      console.log('data:', data);
+    }
+  };
+
+  const gameStatusChange = async () => {
+    console.log('in changeGameStatus');
+
+    let mutationResult: any;
+    try {
+      mutationResult = await changeGameStatus({
+        variables: {
+          gameId: gameIdG,
+        },
+      });
+    } catch (err) {
+      console.log('Error in changeGameStatus', err);
     }
 
     const {data, errors} = mutationResult;
@@ -193,6 +232,12 @@ const GameLobby = ({navigation}: Props) => {
           }
 
           gameIdG = id;
+          try {
+            await AsyncStorage.setItem('game.id', gameIdG);
+            await AsyncStorage.setItem('player.id', playerIdG);
+          } catch (e) {
+            console.log('Error:', e);
+          }
           //gameData = data;
           gameTotal = totalCount;
           gamePlayers = nodes;
@@ -238,24 +283,19 @@ const GameLobby = ({navigation}: Props) => {
       }
     };
     main();
-    // return () => {
-    //   //calls leaveGameMutation
-    //   userLeavesGame();
-    // };
   }, [joinGame]);
 
   //change to false as default value after/while testing
 
   const [settingsEnabled, setSettingsEnabled] = useState(false);
-  const [startButtonEnabled, setStartButtonEnabled] = useState(false);
+  const [startButtonEnabled, setStartButtonEnabled] = useState(true);
+  const [leaveGameButtonEnabled, setLeaveGameButtonEnabled] = useState(true);
 
   const [numberOfRounds, setNumberOfRounds] = useState('3');
   const [isModalVisible, setModalVisible] = useState(false);
   const [isAlertVisible, setAlertVisible] = useState(false);
 
-  const [users, setUsernames] = useState([
-    {userId: '69dc043d-b227-4199-b443-113e8a3756cc', username: 'FirstNameTest'},
-  ] as Array<User>);
+  const [users, setUsernames] = useState([] as Array<User>);
 
   socket.on(
     'newPlayer',
@@ -277,6 +317,12 @@ const GameLobby = ({navigation}: Props) => {
     if (gameIdG === game) {
       //Deletes the username from the list
       setUsernames(users.filter((u) => u.userId !== playerId));
+    }
+  });
+
+  socket.on('gameStarted', (gameId) => {
+    if (gameIdG === gameId) {
+      navigation.navigate('Game');
     }
   });
 
@@ -323,7 +369,12 @@ const GameLobby = ({navigation}: Props) => {
             value={numberOfRounds}
             placeholder={'Number of rounds'}
           />
-          <Button testID={'close-button'} onPress={toggleModal}>
+          <Button
+            testID={'close-button'}
+            onPress={() => {
+              //TODO: Change the game settings to either 3 (default) or to the user's choice
+              toggleModal;
+            }}>
             Apply
           </Button>
         </View>
@@ -343,9 +394,11 @@ const GameLobby = ({navigation}: Props) => {
           <Text style={styles.contentTitle}>Are you sure?</Text>
           <View style={styles.rowView}>
             <Button
+              disabled={!leaveGameButtonEnabled}
               style={{flex: 1}}
               //disconnect the user from the Game
               onPress={async () => {
+                setLeaveGameButtonEnabled(false);
                 socket.emit('playerLeave', gameIdG, playerIdG);
                 await userLeavesGame();
                 toggleAlert();
@@ -367,8 +420,17 @@ const GameLobby = ({navigation}: Props) => {
         <Button
           disabled={!startButtonEnabled}
           style={{bottom: 20, width: '50%'}}
-          onPress={() => {
+          onPress={async () => {
+            setStartButtonEnabled(false);
+            await gameStatusChange();
+            let players = [] as Array<string>;
+            users.forEach((u) => {
+              players.push(u.username);
+            });
+            console.log(players);
+            socket.emit('startGame', gameIdG, players);
             navigation.navigate('Game');
+            setStartButtonEnabled(true);
           }}>
           START
         </Button>

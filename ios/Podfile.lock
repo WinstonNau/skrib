@@ -369,6 +369,8 @@ PODS:
     - React-Core
   - RNCMaskedView (0.1.10):
     - React
+  - RNDeviceInfo (8.1.3):
+    - React-Core
   - RNFBApp (8.4.7):
     - Firebase/CoreOnly (~> 6.34.0)
     - React-Core
@@ -388,6 +390,8 @@ PODS:
   - RNScreens (2.18.1):
     - React-Core
   - RNSketchCanvas (0.8.0):
+    - React
+  - RNSVG (12.1.1):
     - React
   - RNVectorIcons (7.1.0):
     - React
@@ -450,6 +454,7 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCMaskedView (from `../node_modules/@react-native-community/masked-view`)"
+  - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
   - "RNFBAuth (from `../node_modules/@react-native-firebase/auth`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
@@ -458,6 +463,7 @@ DEPENDENCIES:
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - "RNSketchCanvas (from `../node_modules/@terrylinla/react-native-sketch-canvas`)"
+  - RNSVG (from `../node_modules/react-native-svg`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -553,6 +559,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNCMaskedView:
     :path: "../node_modules/@react-native-community/masked-view"
+  RNDeviceInfo:
+    :path: "../node_modules/react-native-device-info"
   RNFBApp:
     :path: "../node_modules/@react-native-firebase/app"
   RNFBAuth:
@@ -569,6 +577,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNSketchCanvas:
     :path: "../node_modules/@terrylinla/react-native-sketch-canvas"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   RNVectorIcons:
     :path: "../node_modules/react-native-vector-icons"
   Yoga:
@@ -630,6 +640,7 @@ SPEC CHECKSUMS:
   ReactCommon: 73d79c7039f473b76db6ff7c6b159c478acbbb3b
   RNCAsyncStorage: 9b7605e899f9acb2fba33e87952c529731265453
   RNCMaskedView: 5a8ec07677aa885546a0d98da336457e2bea557f
+  RNDeviceInfo: 8d3a29207835f972bce883723882980143270d55
   RNFBApp: 804b98033f45c3a3e35b56de8c894f85ef5e4388
   RNFBAuth: f31dd98ff64f171743dd906c3a902b058dfdafaf
   RNGestureHandler: a479ebd5ed4221a810967000735517df0d2db211
@@ -638,6 +649,7 @@ SPEC CHECKSUMS:
   RNReanimated: 514a11da3a2bcc6c3dfd9de32b38e2b9bf101926
   RNScreens: f7ad633b2e0190b77b6a7aab7f914fad6f198d8d
   RNSketchCanvas: 9c28adb5381543ed55cc98ce6de46479cb3cb12c
+  RNSVG: 551acb6562324b1d52a4e0758f7ca0ec234e278f
   RNVectorIcons: bc69e6a278b14842063605de32bec61f0b251a59
   Yoga: 4bd86afe9883422a7c4028c00e34790f560923d6
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a

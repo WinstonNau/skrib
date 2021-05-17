@@ -43,12 +43,6 @@ interface JoinGameResp {
   };
 }
 
-interface GetUsernameResp {
-  playerById: {
-    displayName: string;
-  };
-}
-
 interface LeaveGameResp {
   leaveGame: {
     clientMutationId: string;
@@ -61,25 +55,12 @@ interface ChangeGameStatusResp {
   };
 }
 
-// interface GetPlayerIdResp {
-//   currentPlayer: {
-//     player: {
-//       id: string;
-//     };
-//   };
-// }
-
-interface User {
-  userId: string;
-  username: string;
-}
-
 const JOIN_GAME = gql`
   mutation JoinGame {
     joinGame(input: {}) {
       game {
         id
-        gamePlayersByGameId {
+        gamePlayersByGameId(orderBy: CREATED_AT_ASC) {
           nodes {
             playerByPlayerId {
               displayName
@@ -92,57 +73,6 @@ const JOIN_GAME = gql`
     }
   }
 `;
-
-// const GET_PLAYER_ID = gql`
-//   mutation GetPlayerId {
-//     currentPlayer(input: {}) {
-//       player {
-//         id
-//       }
-//     }
-//   }
-// `;
-
-// const GetPlayerId = async () => {
-//   const [getPlayerId] = useMutation<GetPlayerIdResp>(GET_PLAYER_ID);
-//   console.log('in GetPlayerId');
-//
-//   try {
-//     let mutationResult = await getPlayerId();
-//     const {data, errors} = mutationResult;
-//
-//     if (errors) {
-//       console.log('mutationResult error in GetPlayerId');
-//     } else {
-//       console.log('PlayerIdG =', (playerIdG = data?.currentPlayer.player.id));
-//     }
-//   } catch (e) {
-//     console.log('GetPlayerId error:', e);
-//   }
-// };
-
-// const useGetUsernameById = (playerId: any) => {
-//   const GET_USERNAME = gql`
-//     query GetUsernameById($id: UUID!) {
-//       playerById(id: $id) {
-//         displayName
-//       }
-//     }
-//   `;
-//
-//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-//   const {loading, error, data} = useQuery<GetUsernameResp>(GET_USERNAME, {
-//     variables: {
-//       id: playerId,
-//     },
-//   });
-//
-//   if (error) {
-//     console.log(error);
-//   } else {
-//     return data?.playerById.displayName;
-//   }
-// };
 
 const LEAVE_GAME = gql`
   mutation LeaveGame($gameId: UUID!) {
@@ -234,7 +164,6 @@ const GameLobby = ({navigation}: Props) => {
           gameIdG = id;
           try {
             await AsyncStorage.setItem('game.id', gameIdG);
-            await AsyncStorage.setItem('player.id', playerIdG);
           } catch (e) {
             console.log('Error:', e);
           }
@@ -248,13 +177,8 @@ const GameLobby = ({navigation}: Props) => {
               u.playerByPlayerId.id,
               u.playerByPlayerId.displayName
             );
-            setUsernames(
-              users.concat([
-                {
-                  userId: u.playerByPlayerId.id,
-                  username: u.playerByPlayerId.displayName,
-                },
-              ])
+            setUsernames((users) =>
+              users.concat(u.playerByPlayerId.displayName)
             );
           });
 
@@ -276,7 +200,7 @@ const GameLobby = ({navigation}: Props) => {
           console.log('Bye bye: ' + errors);
         } else {
           console.log('data:', JSON.stringify(data, undefined, 2));
-          socket.emit('playerJoined', gameIdG, playerIdG, playerUsernameG);
+          socket.emit('playerJoined', gameIdG, playerUsernameG);
         }
       } catch (err) {
         console.log('Error catched:::', err);
@@ -295,35 +219,30 @@ const GameLobby = ({navigation}: Props) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isAlertVisible, setAlertVisible] = useState(false);
 
-  const [users, setUsernames] = useState([] as Array<User>);
+  const [users, setUsernames] = useState([] as Array<string>);
 
-  socket.on(
-    'newPlayer',
-    (game: string, playerId: string, playerUsername: string) => {
-      if (gameIdG === game) {
-        //Adds the username to the list
-        setUsernames(
-          users.concat([
-            {
-              userId: playerId,
-              username: playerUsername,
-            },
-          ])
-        );
-      }
+  socket.on('newPlayer', (game, playerUsername) => {
+    if (gameIdG === game) {
+      //Adds the username to the list
+      setUsernames(users.concat(playerUsername));
     }
-  );
-  socket.on('playerDisconnect', (game, playerId) => {
+  });
+
+  socket.on('playerDisconnect', (game, playerUsername) => {
     if (gameIdG === game) {
       //Deletes the username from the list
-      setUsernames(users.filter((u) => u.userId !== playerId));
+      setUsernames(users.filter((u) => u !== playerUsername));
     }
   });
 
   socket.on('gameStarted', (gameId) => {
-    if (gameIdG === gameId) {
-      navigation.navigate('Game');
-    }
+    const main = async () => {
+      if (gameIdG === gameId) {
+        await AsyncStorage.setItem('players', JSON.stringify(users));
+        navigation.navigate('Game');
+      }
+    };
+    main();
   });
 
   const toggleModal = () => {
@@ -334,11 +253,6 @@ const GameLobby = ({navigation}: Props) => {
     setAlertVisible(!isAlertVisible);
   };
 
-  // if (gameTotal === 1) {
-  //   setSettingsEnabled(true);
-  //   setStartButtonEnabled(true);
-  // }
-
   return (
     <Background>
       <BackButton goBack={toggleAlert} />
@@ -347,7 +261,6 @@ const GameLobby = ({navigation}: Props) => {
         <Header>Waiting for players</Header>
       </View>
       <Modal
-        testID={'modalSettings'}
         isVisible={isModalVisible}
         backdropColor="#B4B3DB"
         backdropOpacity={0.8}
@@ -372,7 +285,7 @@ const GameLobby = ({navigation}: Props) => {
           <Button
             testID={'close-button'}
             onPress={() => {
-              //TODO: Change the game settings to either 3 (default) or to the user's choice
+              //TODO: Change the game settings to either 1 (default) or to the user's choice
               toggleModal;
             }}>
             Apply
@@ -380,7 +293,6 @@ const GameLobby = ({navigation}: Props) => {
         </View>
       </Modal>
       <Modal
-        testID={'modalAlert'}
         isVisible={isAlertVisible}
         backdropColor="#B4B3DB"
         backdropOpacity={0.8}
@@ -399,7 +311,7 @@ const GameLobby = ({navigation}: Props) => {
               //disconnect the user from the Game
               onPress={async () => {
                 setLeaveGameButtonEnabled(false);
-                socket.emit('playerLeave', gameIdG, playerIdG);
+                socket.emit('playerLeave', gameIdG, playerUsernameG);
                 await userLeavesGame();
                 toggleAlert();
                 navigation.navigate('Dashboard');
@@ -413,7 +325,7 @@ const GameLobby = ({navigation}: Props) => {
         </View>
       </Modal>
       <FlatList
-        data={users.map((u) => ({key: u.username}))}
+        data={users.map((u) => ({key: u}))}
         renderItem={({item}) => <Text style={styles.item}>{item.key}</Text>}
       />
       <View style={styles.rowView}>
@@ -422,15 +334,12 @@ const GameLobby = ({navigation}: Props) => {
           style={{bottom: 20, width: '50%'}}
           onPress={async () => {
             setStartButtonEnabled(false);
+            //TODO:
+            console.log(users);
             await gameStatusChange();
-            let players = [] as Array<string>;
-            users.forEach((u) => {
-              players.push(u.username);
-            });
-            console.log(players);
-            socket.emit('startGame', gameIdG, players);
+            await AsyncStorage.setItem('players', JSON.stringify(users));
+            socket.emit('startGame', gameIdG);
             navigation.navigate('Game');
-            setStartButtonEnabled(true);
           }}>
           START
         </Button>

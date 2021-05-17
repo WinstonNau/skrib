@@ -21,6 +21,8 @@ type Props = {
   navigation: Navigation;
 };
 
+//TODO: If there is no Username in the AsyncStorage, get the Username, and save it in there
+
 const LoginScreen = ({navigation}: Props) => {
   const [email, setEmail] = useState({value: '', error: ''});
   const [password, setPassword] = useState({value: '', error: ''});

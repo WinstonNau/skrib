@@ -2,6 +2,7 @@ import React, {Component, memo, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Animated,
+  FlatList,
   Image,
   SafeAreaView,
   StyleSheet,
@@ -24,8 +25,7 @@ import Voice, {
 let gameIdG: string;
 let playerUsernameG: string;
 let chosenWord: string;
-
-//TODO: Create a clock, so the drawer and the guessers can see the remaining time
+let playersG: Array<string>;
 
 type Props = {};
 type State = {
@@ -37,6 +37,12 @@ type State = {
   results: string[];
   partialResults: string[];
 };
+
+//TODO: Create query to get all gamePlayers from gameId
+interface GamePlayer {
+  username: string;
+  score: string;
+}
 
 class VoiceGuess extends Component<Props, State> {
   state = {
@@ -94,7 +100,6 @@ class VoiceGuess extends Component<Props, State> {
   };
 
   onSpeechResults = (e: SpeechResultsEvent) => {
-    //TODO: Give feedback to the player if the guess was correct or not
     //@ts-ignore
     let w = e.value[0];
     if (this.state.stop) {
@@ -105,14 +110,14 @@ class VoiceGuess extends Component<Props, State> {
           type: 'success',
         });
         socket.emit('correctGuess', gameIdG, playerUsernameG);
-        //TODO: Also call a mutation, which increases the score of the gamePlayer by 1
+        //TODO: Also call a mutation, which increases the score of the gamePlayer by s
       } else {
         console.log('wrong guess');
         showMessage({
           message: w,
           type: 'danger',
         });
-        socket.emit('wrongGuess', gameIdG, w);
+        socket.emit('wrongGuess', gameIdG, playerUsernameG, w);
       }
       //@ts-ignore
       console.log('onSpeechResults: ', e.value[0]);
@@ -183,15 +188,18 @@ class VoiceGuess extends Component<Props, State> {
 const Drawing = () => {
   let canvas: RNSketchCanvas | null = null;
 
-  const [isWordModalVisible, setWordModalVisibility] = useState(true);
-  const [isWaitingModalVisible, setWaitingModalVisibility] = useState(true);
+  const [isWordModalVisible, setWordModalVisibility] = useState(false);
+  const [isWaitingModalVisible, setWaitingModalVisibility] = useState(false);
+  const [isRoundOverModalVisible, setRoundOverModalVisibility] = useState(
+    false
+  );
 
   //TODO: Create a database of words to draw
   const [choiceOneWord, setChoiceOneWord] = useState('Test eins');
   const [choiceTwoWord, setChoiceTwoWord] = useState('Test zwei');
   const [choiceThreeWord, setChoiceThreeWord] = useState('Test drei');
 
-  const [timer, setTimer] = useState(25);
+  const [timer, setTimer] = useState(0);
 
   const [isDrawer, setDrawer] = useState(false);
 
@@ -204,15 +212,94 @@ const Drawing = () => {
       //"as string" should maybe be removed
       playerUsernameG = (await AsyncStorage.getItem('user.name')) as string;
       gameIdG = (await AsyncStorage.getItem('game.id')) as string;
+      playersG = JSON.parse(
+        (await AsyncStorage.getItem('players')) as string
+      ) as Array<string>;
+      console.log('in useEffect w/o');
       console.log(playerUsernameG);
       console.log(gameIdG);
-      //------------------ Testing
-      if (playerUsernameG === 'Tst5') {
+      console.log(playersG);
+      if (playerUsernameG === playersG[0]) {
         setDrawer(true);
+        setWordModalVisibility(true);
+      } else {
+        setWaitingModalVisibility(true);
       }
     };
     main();
   }, []);
+
+  const [firstTime, setFirstTime] = useState(true);
+  useEffect(() => {
+    if (firstTime) {
+      setFirstTime(false);
+      return;
+    }
+
+    if (timer === 0) {
+      console.log('in timer 0');
+      if (isDrawer) {
+        console.log('in timer 0 is Drawer');
+        for (let i = 0; i < playersG.length; i++) {
+          if (playersG[i] === playerUsernameG && i < playersG.length - 1) {
+            socket.emit('roundOver', gameIdG, playersG[i + 1]);
+          } else if (
+            playersG[i] === playerUsernameG &&
+            i === playersG.length - 1
+          ) {
+            socket.emit('roundOver', gameIdG, playersG[0]);
+          }
+        }
+      }
+      setRoundOverModalVisibility(true);
+      setTimeout(() => {
+        setRoundOverModalVisibility(false);
+        setDrawer(false);
+        if (isDrawer) {
+          setWordModalVisibility(true);
+        } else {
+          setWaitingModalVisibility(true);
+        }
+      }, 5000);
+      return;
+    } else if (timer === 8) {
+      console.log('in timer 8');
+      showMessage({
+        message:
+          "The word's first two letters are: " +
+          chosenWord.split('')[0] +
+          chosenWord.split('')[1] +
+          '_'.repeat(chosenWord.length - 2),
+        type: 'info',
+      });
+    } else if (timer === 15) {
+      console.log('in timer 15');
+      showMessage({
+        message:
+          "The word's first letter is: " +
+          chosenWord.split('')[0] +
+          '_'.repeat(chosenWord.length - 1),
+        type: 'info',
+      });
+    } else if (timer === 23) {
+      console.log('in timer 23');
+      showMessage({
+        message: 'The word has ' + chosenWord.length + ' letters.',
+        type: 'info',
+      });
+    }
+
+    // save intervalId to clear the interval when the
+    // component re-renders
+    const intervalId = setInterval(() => {
+      setTimer(timer - 1);
+    }, 1000);
+
+    // clear interval on re-render to avoid memory leaks
+    return () => clearInterval(intervalId);
+    // add timeLeft as a dependency to re-rerun the effect
+    // when we update it
+  }, [timer]);
 
   socket.on('newPath', (gameId: string, path: any) => {
     if (gameIdG === gameId) {
@@ -244,14 +331,15 @@ const Drawing = () => {
       chosenWord = word;
       console.log(word);
       setWaitingModalVisibility(false);
-      startTimer(word);
+      setTimer(25);
     }
   });
 
-  socket.on('playerGuessedWrong', (gameId, guess) => {
+  socket.on('playerGuessedWrong', (gameId, user, guess) => {
+    console.log('playerGuessedWrong received');
     if (gameIdG === gameId) {
       showMessage({
-        message: guess,
+        message: user + ': ' + guess,
         type: 'default',
       });
     }
@@ -264,18 +352,67 @@ const Drawing = () => {
           message: playerUsername + ' guessed the correct word: ' + guess,
           type: 'warning',
         });
+        console.log('in PlayerGuessedCorrect');
+        if (isDrawer) {
+          console.log('in PlayerGuessedCorrect isDrawer');
+          setFirstTime(true);
+          setTimer(0);
+          for (let i = 0; i < playersG.length; i++) {
+            if (playersG[i] === playerUsernameG && i < playersG.length - 1) {
+              socket.emit('roundOver', gameIdG, playersG[i + 1]);
+            } else if (
+              playersG[i] === playerUsernameG &&
+              i === playersG.length - 1
+            ) {
+              socket.emit('roundOver', gameIdG, playersG[0]);
+            }
+          }
+          setRoundOverModalVisibility(true);
+          setTimeout(() => {
+            console.log('in PlayerGuessedCorrect in Drawer set Timeout');
+            setDrawer(false);
+            setRoundOverModalVisibility(false);
+            setWaitingModalVisibility(true);
+          }, 5000);
+        }
       }
     };
     main();
   });
 
-  if (drawer) {
+  socket.on('roundFinished', (gameId, nextPlayer) => {
+    console.log('in roundFinished, nextPlayer: ', nextPlayer);
+    if (gameIdG === gameId) {
+      setFirstTime(true);
+      setRoundOverModalVisibility(true);
+      setTimeout(() => {
+        console.log('in roundFinished setTimeout', playerUsernameG, nextPlayer);
+        if (nextPlayer === playerUsernameG) {
+          console.log('nextPlayer is drawer');
+          setDrawer(true);
+          setRoundOverModalVisibility(false);
+          console.log(isWordModalVisible);
+          if (!isWordModalVisible) {
+            setWordModalVisibility(true);
+          }
+        } else {
+          console.log('nextPlayer is not drawer');
+          setDrawer(false);
+          setRoundOverModalVisibility(false);
+          if (!isWaitingModalVisible) {
+            setWaitingModalVisibility(true);
+          }
+        }
+      }, 5000);
+    }
+  });
+
+  if (isDrawer) {
     return (
       <SafeAreaView style={styles.container}>
         <FlashMessage position="top" />
         <View style={{flex: 1, flexDirection: 'row'}}>
           <Modal
-            testID={'modalSettings'}
             isVisible={isWordModalVisible}
             backdropColor="#B4B3DB"
             backdropOpacity={0.8}
@@ -310,9 +447,10 @@ const Drawing = () => {
                         break;
                     }
                     console.log(word);
+                    chosenWord = word;
+                    setTimer(25);
                     socket.emit('selectWord', gameIdG, word);
                     setWordModalVisibility(false);
-                    startTimer(word);
                   }
                 }}>
                 {({remainingTime, animatedColor}) => (
@@ -324,36 +462,54 @@ const Drawing = () => {
               <Button
                 testID={'choice-one-button'}
                 onPress={() => {
+                  chosenWord = choiceOneWord;
                   socket.emit('selectWord', gameIdG, choiceOneWord);
                   toggleChooseWordModal();
-                  startTimer(choiceOneWord);
+                  setTimer(25);
                 }}>
                 {choiceOneWord}
               </Button>
               <Button
                 testID={'choice-two-button'}
                 onPress={() => {
+                  chosenWord = choiceTwoWord;
                   socket.emit('selectWord', gameIdG, choiceTwoWord);
                   toggleChooseWordModal();
-                  startTimer(choiceTwoWord);
+                  setTimer(25);
                 }}>
                 {choiceTwoWord}
               </Button>
               <Button
                 testID={'choice-three-button'}
                 onPress={() => {
+                  chosenWord = choiceThreeWord;
                   socket.emit('selectWord', gameIdG, choiceThreeWord);
                   toggleChooseWordModal();
-                  startTimer(choiceThreeWord);
+                  setTimer(25);
                 }}>
                 {choiceThreeWord}
               </Button>
             </View>
           </Modal>
+          <Modal
+            isVisible={isRoundOverModalVisible}
+            backdropColor="#B4B3DB"
+            backdropOpacity={0.8}
+            animationIn="zoomInDown"
+            animationOut="zoomOutUp"
+            animationInTiming={600}
+            animationOutTiming={600}
+            backdropTransitionInTiming={600}
+            backdropTransitionOutTiming={600}>
+            <View style={styles.content}>
+              <Text style={styles.contentTitle}>Round over:</Text>
+              {/*Insert flatlist with username + score */}
+            </View>
+          </Modal>
           <RNSketchCanvas
             onStrokeEnd={(path) => {
               console.log('onStrokeEnd:', JSON.stringify(path));
-              socket.emit('newPathDrawn', path);
+              socket.emit('newPathDrawn', gameIdG, path);
             }}
             ref={(ref: RNSketchCanvas) => (canvas = ref)}
             containerStyle={{backgroundColor: 'transparent', flex: 1}}
@@ -366,7 +522,7 @@ const Drawing = () => {
               </View>
             }
             onUndoPressed={() => {
-              socket.emit('undoReq');
+              socket.emit('undoReq', gameIdG);
             }}
             clearComponent={
               <View style={styles.functionButton}>
@@ -374,7 +530,7 @@ const Drawing = () => {
               </View>
             }
             onClearPressed={() => {
-              socket.emit('clearReq');
+              socket.emit('clearReq', gameIdG);
             }}
             eraseComponent={
               <View style={styles.functionButton}>
@@ -405,6 +561,20 @@ const Drawing = () => {
             }}
           />
         </View>
+        <View
+          style={{
+            position: 'absolute',
+            //should may be changed
+            top: '7.2%',
+            alignItems: 'center',
+          }}>
+          <Text
+            style={{
+              fontSize: 25,
+            }}>
+            {timer}
+          </Text>
+        </View>
       </SafeAreaView>
     );
   } else {
@@ -413,7 +583,6 @@ const Drawing = () => {
         <FlashMessage position="top" />
         <View style={{flex: 1, flexDirection: 'row'}}>
           <Modal
-            testID={'modalSettings'}
             isVisible={isWaitingModalVisible}
             backdropColor="#B4B3DB"
             backdropOpacity={0.8}
@@ -426,6 +595,21 @@ const Drawing = () => {
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Waiting...</Text>
               <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+          </Modal>
+          <Modal
+            isVisible={isRoundOverModalVisible}
+            backdropColor="#B4B3DB"
+            backdropOpacity={0.8}
+            animationIn="zoomInDown"
+            animationOut="zoomOutUp"
+            animationInTiming={600}
+            animationOutTiming={600}
+            backdropTransitionInTiming={600}
+            backdropTransitionOutTiming={600}>
+            <View style={styles.content}>
+              <Text style={styles.contentTitle}>Round over:</Text>
+              {/*Insert flatlist with username + score */}
             </View>
           </Modal>
           <View style={{flex: 1}} pointerEvents={'none'}>

@@ -240,16 +240,19 @@ const Drawing = () => {
       console.log('in timer 0');
       if (isDrawer) {
         console.log('in timer 0 is Drawer');
-        for (let i = 0; i < playersG.length; i++) {
-          if (playersG[i] === playerUsernameG && i < playersG.length - 1) {
-            socket.emit('roundOver', gameIdG, playersG[i + 1]);
-          } else if (
-            playersG[i] === playerUsernameG &&
-            i === playersG.length - 1
-          ) {
-            socket.emit('roundOver', gameIdG, playersG[0]);
-          }
+        const i = playersG.findIndex(
+          (username) => username === playerUsernameG
+        );
+
+        if (i < 0) {
+          console.error('Something went wrong');
         }
+
+        socket.emit(
+          'roundOver',
+          gameIdG,
+          playersG[i < playersG.length - 1 ? i + 1 : 0]
+        );
       }
       setRoundOverModalVisibility(true);
       setTimeout(() => {
@@ -357,16 +360,19 @@ const Drawing = () => {
           console.log('in PlayerGuessedCorrect isDrawer');
           setFirstTime(true);
           setTimer(0);
-          for (let i = 0; i < playersG.length; i++) {
-            if (playersG[i] === playerUsernameG && i < playersG.length - 1) {
-              socket.emit('roundOver', gameIdG, playersG[i + 1]);
-            } else if (
-              playersG[i] === playerUsernameG &&
-              i === playersG.length - 1
-            ) {
-              socket.emit('roundOver', gameIdG, playersG[0]);
-            }
+          const i = playersG.findIndex(
+            (username) => username === playerUsernameG
+          );
+
+          if (i < 0) {
+            console.error('Something went wrong');
           }
+
+          socket.emit(
+            'roundOver',
+            gameIdG,
+            playersG[i < playersG.length - 1 ? i + 1 : 0]
+          );
           setRoundOverModalVisibility(true);
           setTimeout(() => {
             console.log('in PlayerGuessedCorrect in Drawer set Timeout');

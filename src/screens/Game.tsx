@@ -390,18 +390,19 @@ const Drawing = () => {
       setRoundOverModalVisibility(true);
       setTimeout(() => {
         console.log('in roundFinished setTimeout', playerUsernameG, nextPlayer);
-        setRoundOverModalVisibility(false);
         if (nextPlayer === playerUsernameG) {
           console.log('nextPlayer is drawer');
           setDrawer(true);
-          console.log(isWordModalVisible);
-          setWordModalVisibility(true);
-        } else {
-          console.log('nextPlayer is not drawer');
-          // if (!isWaitingModalVisible) {
-          setWaitingModalVisibility(true);
-          // }
+          // console.log(isWordModalVisible);
+          // setWordModalVisibility(true);
         }
+        setRoundOverModalVisibility(false);
+        // else {
+        //   console.log('nextPlayer is not drawer');
+        //   // if (!isWaitingModalVisible) {
+        //   setWaitingModalVisibility(true);
+        //   // }
+        // }
       }, 5000);
     }
   });
@@ -499,7 +500,16 @@ const Drawing = () => {
             animationInTiming={600}
             animationOutTiming={600}
             backdropTransitionInTiming={600}
-            backdropTransitionOutTiming={600}>
+            backdropTransitionOutTiming={600}
+            onModalHide={() => {
+              if (isDrawer) {
+                console.log('Kohpai', "it's visible");
+                setWordModalVisibility(true);
+              } else {
+                console.log('Kohpai', "it's waiting");
+                setWaitingModalVisibility(true);
+              }
+            }}>
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Round over:</Text>
               {/*Insert flatlist with username + score */}
@@ -605,7 +615,16 @@ const Drawing = () => {
             animationInTiming={600}
             animationOutTiming={600}
             backdropTransitionInTiming={600}
-            backdropTransitionOutTiming={600}>
+            backdropTransitionOutTiming={600}
+            onModalHide={() => {
+              if (isDrawer) {
+                console.log('Kohpai', "it's visible");
+                setWordModalVisibility(true);
+              } else {
+                console.log('Kohpai', "it's waiting");
+                setWaitingModalVisibility(true);
+              }
+            }}>
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Round over:</Text>
               {/*Insert flatlist with username + score */}

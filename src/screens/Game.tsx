@@ -253,17 +253,14 @@ const Drawing = () => {
           gameIdG,
           playersG[i < playersG.length - 1 ? i + 1 : 0]
         );
-      }
-      setRoundOverModalVisibility(true);
-      setTimeout(() => {
-        setRoundOverModalVisibility(false);
-        setDrawer(false);
-        if (isDrawer) {
-          setWordModalVisibility(true);
-        } else {
+
+        setRoundOverModalVisibility(true);
+        setTimeout(() => {
+          setRoundOverModalVisibility(false);
+          setDrawer(false);
           setWaitingModalVisibility(true);
-        }
-      }, 5000);
+        }, 5000);
+      }
       return;
     } else if (timer === 8) {
       console.log('in timer 8');
@@ -389,25 +386,21 @@ const Drawing = () => {
   socket.on('roundFinished', (gameId, nextPlayer) => {
     console.log('in roundFinished, nextPlayer: ', nextPlayer);
     if (gameIdG === gameId) {
-      setFirstTime(true);
+      // setFirstTime(true);
       setRoundOverModalVisibility(true);
       setTimeout(() => {
         console.log('in roundFinished setTimeout', playerUsernameG, nextPlayer);
+        setRoundOverModalVisibility(false);
         if (nextPlayer === playerUsernameG) {
           console.log('nextPlayer is drawer');
           setDrawer(true);
-          setRoundOverModalVisibility(false);
           console.log(isWordModalVisible);
-          if (!isWordModalVisible) {
-            setWordModalVisibility(true);
-          }
+          setWordModalVisibility(true);
         } else {
           console.log('nextPlayer is not drawer');
-          setDrawer(false);
-          setRoundOverModalVisibility(false);
-          if (!isWaitingModalVisible) {
-            setWaitingModalVisibility(true);
-          }
+          // if (!isWaitingModalVisible) {
+          setWaitingModalVisibility(true);
+          // }
         }
       }, 5000);
     }

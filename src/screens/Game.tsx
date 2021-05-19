@@ -258,7 +258,6 @@ const Drawing = () => {
         setTimeout(() => {
           setRoundOverModalVisibility(false);
           setDrawer(false);
-          setWaitingModalVisibility(true);
         }, 5000);
       }
       return;
@@ -502,13 +501,8 @@ const Drawing = () => {
             backdropTransitionInTiming={600}
             backdropTransitionOutTiming={600}
             onModalHide={() => {
-              if (isDrawer) {
-                console.log('Kohpai', "it's visible");
-                setWordModalVisibility(true);
-              } else {
-                console.log('Kohpai', "it's waiting");
-                setWaitingModalVisibility(true);
-              }
+              console.log('Kohpai', "it's visible");
+              setWordModalVisibility(true);
             }}>
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Round over:</Text>
@@ -617,13 +611,8 @@ const Drawing = () => {
             backdropTransitionInTiming={600}
             backdropTransitionOutTiming={600}
             onModalHide={() => {
-              if (isDrawer) {
-                console.log('Kohpai', "it's visible");
-                setWordModalVisibility(true);
-              } else {
-                console.log('Kohpai', "it's waiting");
-                setWaitingModalVisibility(true);
-              }
+              console.log('Kohpai', "it's waiting");
+              setWaitingModalVisibility(true);
             }}>
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Round over:</Text>

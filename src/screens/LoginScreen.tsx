@@ -11,6 +11,9 @@ import {emailValidator, passwordValidator} from '../core/utils';
 import {Navigation} from '../types';
 import auth from '@react-native-firebase/auth';
 import {GoogleSignin} from '@react-native-community/google-signin';
+import {gql} from '@apollo/client/core';
+import {useMutation} from '@apollo/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 GoogleSignin.configure({
   webClientId:
@@ -21,11 +24,53 @@ type Props = {
   navigation: Navigation;
 };
 
-//TODO: If there is no Username in the AsyncStorage, get the Username, and save it in there
+interface GetUsernameResp {
+  currentPlayer: {
+    player: {
+      displayName: string;
+    };
+  };
+}
+
+const GET_USERNAME = gql`
+  mutation GetUsername {
+    currentPlayer(input: {}) {
+      player {
+        displayName
+      }
+    }
+  }
+`;
 
 const LoginScreen = ({navigation}: Props) => {
   const [email, setEmail] = useState({value: '', error: ''});
   const [password, setPassword] = useState({value: '', error: ''});
+
+  const [getUsername] = useMutation<GetUsernameResp>(GET_USERNAME);
+
+  const getPlayerUsername = async () => {
+    console.log('in getPlayerUsername');
+
+    let mutationResult: any;
+    try {
+      mutationResult = await getUsername();
+    } catch (err) {
+      console.log('An error occurred:', err);
+    }
+
+    const {data, errors} = mutationResult;
+
+    await AsyncStorage.setItem(
+      'user.name',
+      data.currentPlayer.player.displayName
+    );
+
+    if (errors) {
+      console.log('Bye bye: ' + errors);
+    } else {
+      console.log('data:', data);
+    }
+  };
 
   const _onLoginPressed = () => {
     const emailError = emailValidator(email.value);
@@ -42,6 +87,9 @@ const LoginScreen = ({navigation}: Props) => {
       .then(() => {
         console.log('User successfully signed in!');
         navigation.navigate('Dashboard');
+        setTimeout(() => {
+          getPlayerUsername();
+        }, 500);
       })
       .catch((error) => {
         if (error.code === 'auth/invalid-email') {

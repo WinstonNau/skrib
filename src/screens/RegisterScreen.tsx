@@ -1,4 +1,4 @@
-import React, {memo, useState} from 'react';
+import React, {memo, useEffect, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
@@ -10,24 +10,87 @@ import {theme} from '../core/theme';
 import {Navigation} from '../types';
 import {emailValidator, passwordValidator, nameValidator} from '../core/utils';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
-import {GoogleSignin} from '@react-native-community/google-signin';
+// import {GoogleSignin} from '@react-native-community/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {gql} from '@apollo/client/core';
+import {useLazyQuery} from '@apollo/client';
+import {getUserAgent} from 'react-native-device-info';
 
-GoogleSignin.configure({
-  webClientId:
-    '703490486450-2mncou1hcl9skqpe8bl69t978099tte2.apps.googleusercontent.com',
-});
+// GoogleSignin.configure({
+//   webClientId:
+//     '703490486450-2mncou1hcl9skqpe8bl69t978099tte2.apps.googleusercontent.com',
+// });
 
 type Props = {
   navigation: Navigation;
 };
+
+interface CheckUsernameResp {
+  playerByDisplayName: {
+    displayName: string;
+  };
+}
+
+const CHECK_USERNAME = gql`
+  query CheckUsername($displayName: String!) {
+    playerByDisplayName(displayName: $displayName) {
+      displayName
+    }
+  }
+`;
 
 const RegisterScreen = ({navigation}: Props) => {
   const [name, setName] = useState({value: '', error: ''});
   const [email, setEmail] = useState({value: '', error: ''});
   const [password, setPassword] = useState({value: '', error: ''});
 
-  const _onSignUpPressed = () => {
+  const [getUsername, {loading, data}] = useLazyQuery<CheckUsernameResp>(
+    CHECK_USERNAME
+  );
+
+  useEffect(() => {
+    if (data) {
+      if (data.playerByDisplayName === null) {
+        auth()
+          .createUserWithEmailAndPassword(email.value, password.value)
+          .then((uc: FirebaseAuthTypes.UserCredential) => {
+            console.log('User account created & signed in!');
+            _saveUsername(name.value);
+            navigation.navigate('Dashboard');
+          })
+          .catch((error) => {
+            if (error.code === 'auth/email-already-in-use') {
+              setEmail({
+                ...email,
+                error: 'That email address is already in use!',
+              });
+              console.log('That email address is already in use!');
+            }
+
+            if (error.code === 'auth/invalid-email') {
+              setEmail({
+                ...email,
+                error: 'That email address is invalid!',
+              });
+              console.log('That email address is invalid!');
+            }
+
+            console.error(error);
+          });
+      } else if (data?.playerByDisplayName.displayName === name.value) {
+        setName({...name, error: 'This username is already in use.'});
+      } else {
+        setName({...name, error: 'An unknown error occurred.'});
+        console.log('An unknown error occurred.');
+      }
+    }
+  }, [data]);
+
+  if (loading) {
+    console.log('Loading...');
+  }
+
+  const _onSignUpPressed = async () => {
     const nameError = nameValidator(name.value);
     const emailError = emailValidator(email.value);
     const passwordError = passwordValidator(password.value);
@@ -39,24 +102,7 @@ const RegisterScreen = ({navigation}: Props) => {
       return;
     }
 
-    auth()
-      .createUserWithEmailAndPassword(email.value, password.value)
-      .then((uc: FirebaseAuthTypes.UserCredential) => {
-        console.log('User account created & signed in!');
-        _saveUsername(name.value);
-        navigation.navigate('Dashboard');
-      })
-      .catch((error) => {
-        if (error.code === 'auth/email-already-in-use') {
-          console.log('That email address is already in use!');
-        }
-
-        if (error.code === 'auth/invalid-email') {
-          console.log('That email address is invalid!');
-        }
-
-        console.error(error);
-      });
+    getUsername({variables: {displayName: name.value}});
   };
 
   const _saveUsername = async (user: string) => {
@@ -116,15 +162,15 @@ const RegisterScreen = ({navigation}: Props) => {
         Sign Up
       </Button>
 
-      <Button
-        onPress={() =>
-          onGoogleButtonPress().then(() => {
-            console.log('Signed in with Google!');
-            navigation.navigate('Dashboard');
-          })
-        }>
-        Sign-up with Google
-      </Button>
+      {/*<Button*/}
+      {/*  onPress={() =>*/}
+      {/*    onGoogleButtonPress().then(() => {*/}
+      {/*      console.log('Signed in with Google!');*/}
+      {/*      navigation.navigate('Dashboard');*/}
+      {/*    })*/}
+      {/*  }>*/}
+      {/*  Sign-up with Google*/}
+      {/*</Button>*/}
 
       <View style={styles.row}>
         <Text style={styles.label}>Already have an account? </Text>
@@ -136,16 +182,16 @@ const RegisterScreen = ({navigation}: Props) => {
   );
 };
 
-async function onGoogleButtonPress() {
-  // Get the users ID token
-  const {idToken} = await GoogleSignin.signIn();
-
-  // Create a Google credential with the token
-  const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
-  // Sign-in the user with the credential
-  return auth().signInWithCredential(googleCredential);
-}
+// async function onGoogleButtonPress() {
+//   // Get the users ID token
+//   const {idToken} = await GoogleSignin.signIn();
+//
+//   // Create a Google credential with the token
+//   const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+//
+//   // Sign-in the user with the credential
+//   return auth().signInWithCredential(googleCredential);
+// }
 
 const styles = StyleSheet.create({
   label: {

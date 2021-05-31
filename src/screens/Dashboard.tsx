@@ -5,6 +5,7 @@ import {Navigation} from '../types';
 import Background from '../components/Background';
 import {gql, useMutation} from '@apollo/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import auth from '@react-native-firebase/auth';
 
 const FadeInView = (props: any) => {
   const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
@@ -28,27 +29,6 @@ const FadeInView = (props: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  playbuttonview: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  titleview: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  titlestyle: {
-    borderTopWidth: 50,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    fontSize: 50,
-    fontStyle: 'normal',
-    color: '#9400d3',
-  },
-});
-
 type Props = {
   navigation: Navigation;
 };
@@ -61,18 +41,19 @@ interface RegisterUserResp {
   };
 }
 
-const MainScreen = ({navigation}: {navigation: Navigation}) => {
-  const REGISTER_USER = gql`
-    mutation RegisterPlayer($displayName: String!) {
-      registerPlayer(input: {displayName: $displayName}) {
-        player {
-          createdAt
-        }
+const REGISTER_USER = gql`
+  mutation RegisterPlayer($displayName: String!) {
+    registerPlayer(input: {displayName: $displayName}) {
+      player {
+        createdAt
       }
     }
-  `;
+  }
+`;
 
+const MainScreen = ({navigation}: {navigation: Navigation}) => {
   const [registerUser] = useMutation<RegisterUserResp>(REGISTER_USER);
+
   useEffect(() => {
     const main = async () => {
       console.log('In onFinish');
@@ -102,12 +83,19 @@ const MainScreen = ({navigation}: {navigation: Navigation}) => {
     };
     main();
   }, [registerUser]);
+
+  const signOut = async () => {
+    await auth().signOut();
+    navigation.navigate('HomeScreen');
+  };
+
   return (
     <Background>
       <View style={styles.titleview}>
         <Text style={styles.titlestyle}>Skrib</Text>
       </View>
       <FadeInView style={styles.playbuttonview}>
+        <Button title={'Log out'} onPress={signOut} />
         <Button
           title="Play now!"
           onPress={() => navigation.navigate('GameLobby')}
@@ -116,5 +104,26 @@ const MainScreen = ({navigation}: {navigation: Navigation}) => {
     </Background>
   );
 };
+
+const styles = StyleSheet.create({
+  playbuttonview: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  titleview: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  titlestyle: {
+    borderTopWidth: 50,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    fontSize: 50,
+    fontStyle: 'normal',
+    color: '#9400d3',
+  },
+});
 
 export default memo(MainScreen);

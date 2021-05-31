@@ -9,6 +9,7 @@ import {
   Dashboard,
   GameLobby,
   Game,
+  AfterGame,
 } from './screens';
 
 const Router = createStackNavigator(
@@ -20,6 +21,7 @@ const Router = createStackNavigator(
     Dashboard,
     GameLobby,
     Game,
+    AfterGame,
   },
   {
     initialRouteName: 'HomeScreen',

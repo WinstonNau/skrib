@@ -115,6 +115,20 @@ type GamesEdge {
     node: Game
 }
 
+"The output of our `getGame` mutation."
+type GetGamePayload {
+    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
+    clientMutationId: String
+    game: Game
+    "An edge for our `Game`. May be used by Relay 1."
+    gameEdge(
+        "The method to use when ordering `Game`."
+        orderBy: [GamesOrderBy!] = [PRIMARY_KEY_ASC]
+    ): GamesEdge
+    "Our root query field type. Allows us to run any query from our mutation payload."
+    query: Query
+}
+
 "An interval of time that has passed where the smallest distinct unit is a second."
 type Interval {
     "A quantity of days."
@@ -164,6 +178,10 @@ type Mutation {
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: CurrentPlayerInput!
     ): CurrentPlayerPayload
+    getGame(
+        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
+        input: GetGameInput!
+    ): GetGamePayload
     "Player joins a game room"
     joinGame(
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
@@ -178,6 +196,10 @@ type Mutation {
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: RegisterPlayerInput!
     ): RegisterPlayerPayload
+    updateScore(
+        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
+        input: UpdateScoreInput!
+    ): UpdateScorePayload
 }
 
 "Information about pagination in a connection."
@@ -337,6 +359,14 @@ type RegisterPlayerPayload {
     query: Query
 }
 
+"The output of our `updateScore` mutation."
+type UpdateScorePayload {
+    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
+    clientMutationId: String
+    "Our root query field type. Allows us to run any query from our mutation payload."
+    query: Query
+}
+
 "Methods to use when ordering `GamePlayer`."
 enum GamePlayersOrderBy {
     CREATED_AT_ASC
@@ -439,6 +469,13 @@ input GamePlayerCondition {
     updatedAt: Datetime
 }
 
+"All input for the `getGame` mutation."
+input GetGameInput {
+    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
+    clientMutationId: String
+    gameId: UUID!
+}
+
 "An interval of time that has passed where the smallest distinct unit is a second."
 input IntervalInput {
     "A quantity of days."
@@ -488,6 +525,13 @@ input RegisterPlayerInput {
     "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
     clientMutationId: String
     displayName: String!
+}
+
+"All input for the `updateScore` mutation."
+input UpdateScoreInput {
+    addedScore: Int!
+    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
+    clientMutationId: String
 }
 
 

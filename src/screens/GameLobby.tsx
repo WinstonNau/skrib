@@ -23,6 +23,7 @@ type Props = {
 let gameIdG: string;
 let gameTotal: number;
 let gamePlayers: any;
+let roundNumG: number;
 let playerIdG: string;
 let playerUsernameG: string | null;
 
@@ -30,6 +31,7 @@ interface JoinGameResp {
   joinGame: {
     game: {
       id: string;
+      roundNum: number;
       gamePlayersByGameId: {
         nodes: {
           playerByPlayerId: {
@@ -69,6 +71,7 @@ const JOIN_GAME = gql`
           }
           totalCount
         }
+        roundNum
       }
     }
   }
@@ -153,7 +156,7 @@ const GameLobby = ({navigation}: Props) => {
 
         const {data, errors} = mutationResult;
         if (data) {
-          const {id, gamePlayersByGameId} = data.joinGame.game;
+          const {id, roundNum, gamePlayersByGameId} = data.joinGame.game;
           const {totalCount, nodes} = gamePlayersByGameId;
 
           if (totalCount === 1) {
@@ -162,8 +165,10 @@ const GameLobby = ({navigation}: Props) => {
           }
 
           gameIdG = id;
+          roundNumG = roundNum;
           try {
             await AsyncStorage.setItem('game.id', gameIdG);
+            await AsyncStorage.setItem('round.num', JSON.stringify(roundNumG));
           } catch (e) {
             console.log('Error:', e);
           }
@@ -235,6 +240,12 @@ const GameLobby = ({navigation}: Props) => {
     }
   });
 
+  socket.on('roundNumberUpdated', (gameId, roundNum) => {
+    if (gameIdG === gameId) {
+      roundNumG = roundNum;
+    }
+  });
+
   socket.on('gameStarted', (gameId) => {
     const main = async () => {
       if (gameIdG === gameId) {
@@ -285,7 +296,7 @@ const GameLobby = ({navigation}: Props) => {
           <Button
             testID={'close-button'}
             onPress={() => {
-              //TODO: Change the game settings to either 1 (default) or to the user's choice
+              socket.emit('newRoundNumber', gameIdG, numberOfRounds);
               toggleModal;
             }}>
             Apply
@@ -334,7 +345,6 @@ const GameLobby = ({navigation}: Props) => {
           style={{bottom: 20, width: '50%'}}
           onPress={async () => {
             setStartButtonEnabled(false);
-            //TODO:
             console.log(users);
             await gameStatusChange();
             await AsyncStorage.setItem('players', JSON.stringify(users));

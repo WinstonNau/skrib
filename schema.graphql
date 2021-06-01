@@ -196,6 +196,10 @@ type Mutation {
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: RegisterPlayerInput!
     ): RegisterPlayerPayload
+    updateRoundNum(
+        "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
+        input: UpdateRoundNumInput!
+    ): UpdateRoundNumPayload
     updateScore(
         "The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields."
         input: UpdateScoreInput!
@@ -355,6 +359,14 @@ type RegisterPlayerPayload {
         "The method to use when ordering `Player`."
         orderBy: [PlayersOrderBy!] = [PRIMARY_KEY_ASC]
     ): PlayersEdge
+    "Our root query field type. Allows us to run any query from our mutation payload."
+    query: Query
+}
+
+"The output of our `updateRoundNum` mutation."
+type UpdateRoundNumPayload {
+    "The exact same `clientMutationId` that was provided in the mutation input, unchanged and unused. May be used by a client to track mutations."
+    clientMutationId: String
     "Our root query field type. Allows us to run any query from our mutation payload."
     query: Query
 }
@@ -525,6 +537,14 @@ input RegisterPlayerInput {
     "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
     clientMutationId: String
     displayName: String!
+}
+
+"All input for the `updateRoundNum` mutation."
+input UpdateRoundNumInput {
+    "An arbitrary string value with no semantic meaning. Will be included in the payload verbatim. May be used to track mutations by the client."
+    clientMutationId: String
+    gameId: UUID!
+    rounds: Int!
 }
 
 "All input for the `updateScore` mutation."

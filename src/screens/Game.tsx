@@ -18,8 +18,8 @@ import {CountdownCircleTimer} from 'react-native-countdown-circle-timer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FlashMessage, {showMessage} from 'react-native-flash-message';
 import Voice, {
-  SpeechResultsEvent,
   SpeechErrorEvent,
+  SpeechResultsEvent,
 } from '@react-native-community/voice';
 import {gql} from '@apollo/client/core';
 import {useMutation} from '@apollo/client';

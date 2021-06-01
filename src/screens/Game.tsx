@@ -23,6 +23,8 @@ import Voice, {
 } from '@react-native-community/voice';
 import {gql} from '@apollo/client/core';
 import {useMutation} from '@apollo/client';
+import {graphql, MutateProps} from '@apollo/client/react/hoc';
+
 import {Navigation} from '../types';
 
 let gameIdG: string;
@@ -34,7 +36,10 @@ let rounds = 0;
 //TODO: Figure out a better way to do getPlSc
 let getPlSc = true;
 
-type Props = {};
+interface Props extends Partial<MutateProps> {
+  timer: number;
+}
+
 type State = {
   recognized: string;
   pitch: string;
@@ -137,7 +142,7 @@ class VoiceGuess extends Component<Props, State> {
     });
   };
 
-  onSpeechResults = (e: SpeechResultsEvent) => {
+  onSpeechResults = async (e: SpeechResultsEvent) => {
     //@ts-ignore
     let w = e.value[0];
     if (this.state.stop) {
@@ -149,6 +154,18 @@ class VoiceGuess extends Component<Props, State> {
         });
         socket.emit('correctGuess', gameIdG, playerUsernameG);
         //TODO: Also call a mutation, which increases the score of the gamePlayer by timer * 10
+        const {mutate} = this.props;
+
+        if (mutate) {
+          const {data} = await mutate({
+            variables: {addedScore: this.props.timer * 10},
+            fetchPolicy: 'network-only',
+          });
+
+          if (data) {
+            console.log('Success', data);
+          }
+        }
       } else {
         console.log('wrong guess');
         showMessage({
@@ -222,6 +239,16 @@ class VoiceGuess extends Component<Props, State> {
     );
   }
 }
+
+const UPDATE_SCORES = gql`
+  mutation UpdateScoreMutation($addedScore: Int!) {
+    updateScore(input: {addedScore: $addedScore}) {
+      clientMutationId
+    }
+  }
+`;
+
+const EnhancedVoiceGuess = graphql<Props>(UPDATE_SCORES)(VoiceGuess);
 
 const Drawing = ({navigation}: {navigation: Navigation}) => {
   let canvas: RNSketchCanvas | null = null;
@@ -852,7 +879,7 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
               canvasStyle={{backgroundColor: 'transparent', flex: 1}}
             />
           </View>
-          <VoiceGuess />
+          <EnhancedVoiceGuess timer={timer} />
         </View>
         <View
           style={{

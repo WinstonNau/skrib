@@ -56,35 +56,41 @@ const MainScreen = ({navigation}: {navigation: Navigation}) => {
 
   useEffect(() => {
     const main = async () => {
-      console.log('In onFinish');
+      if (
+        !JSON.parse(
+          (await AsyncStorage.getItem('logged.in')) as string
+        ) as boolean
+      ) {
+        let name = await AsyncStorage.getItem('user.name');
+        console.log(name);
 
-      console.log(await AsyncStorage.getItem('user.name'));
+        let mutationResult: any;
+        try {
+          mutationResult = await registerUser({
+            variables: {
+              displayName: name,
+            },
+          });
+        } catch (err) {
+          console.log(err);
+        }
 
-      let name = await AsyncStorage.getItem('user.name');
+        const {data, errors} = mutationResult;
 
-      let mutationResult: any;
-      try {
-        mutationResult = await registerUser({
-          variables: {
-            displayName: name,
-          },
-        });
-      } catch (err) {
-        console.log(err);
-      }
+        if (errors) {
+          console.log('Bye bye: ' + errors);
+        } else {
+          console.log('data:', data);
+        }
 
-      const {data, errors} = mutationResult;
-
-      if (errors) {
-        console.log('Bye bye: ' + errors);
-      } else {
-        console.log('data:', data);
+        await AsyncStorage.setItem('logged.in', JSON.stringify(true));
       }
     };
     main();
   }, [registerUser]);
 
   const signOut = async () => {
+    await AsyncStorage.setItem('logged.in', JSON.stringify(false));
     await auth().signOut();
     navigation.navigate('HomeScreen');
   };

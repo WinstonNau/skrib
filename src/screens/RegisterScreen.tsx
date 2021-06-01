@@ -56,7 +56,11 @@ const RegisterScreen = ({navigation}: Props) => {
           .then((uc: FirebaseAuthTypes.UserCredential) => {
             console.log('User account created & signed in!');
             _saveUsername(name.value);
-            navigation.navigate('Dashboard');
+            const setLoggedIn = async () => {
+              await AsyncStorage.setItem('logged.in', JSON.stringify(false));
+              navigation.navigate('Dashboard');
+            };
+            setLoggedIn();
           })
           .catch((error) => {
             if (error.code === 'auth/email-already-in-use') {

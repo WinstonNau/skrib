@@ -21,11 +21,18 @@ import Voice, {
   SpeechResultsEvent,
   SpeechErrorEvent,
 } from '@react-native-community/voice';
+import {gql} from '@apollo/client/core';
+import {useMutation} from '@apollo/client';
+import {Navigation} from '../types';
 
 let gameIdG: string;
+let roundNumG: number;
 let playerUsernameG: string;
 let chosenWord: string;
 let playersG: Array<string>;
+let rounds = 0;
+//TODO: Figure out a better way to do getPlSc
+let getPlSc = true;
 
 type Props = {};
 type State = {
@@ -38,11 +45,42 @@ type State = {
   partialResults: string[];
 };
 
-//TODO: Create query to get all gamePlayers from gameId
 interface GamePlayer {
   username: string;
-  score: string;
+  score: number;
 }
+
+interface GetScoresResp {
+  getGame: {
+    game: {
+      gamePlayersByGameId: {
+        nodes: {
+          score: number;
+          playerByPlayerId: {
+            displayName: string;
+          };
+        }[];
+      };
+    };
+  };
+}
+
+const GET_SCORES = gql`
+  mutation getPlayerScores($gameId: UUID!) {
+    getGame(input: {gameId: $gameId}) {
+      game {
+        gamePlayersByGameId(orderBy: SCORE_DESC) {
+          nodes {
+            score
+            playerByPlayerId {
+              displayName
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
 class VoiceGuess extends Component<Props, State> {
   state = {
@@ -110,7 +148,7 @@ class VoiceGuess extends Component<Props, State> {
           type: 'success',
         });
         socket.emit('correctGuess', gameIdG, playerUsernameG);
-        //TODO: Also call a mutation, which increases the score of the gamePlayer by s
+        //TODO: Also call a mutation, which increases the score of the gamePlayer by timer * 10
       } else {
         console.log('wrong guess');
         showMessage({
@@ -185,8 +223,30 @@ class VoiceGuess extends Component<Props, State> {
   }
 }
 
-const Drawing = () => {
+const Drawing = ({navigation}: {navigation: Navigation}) => {
   let canvas: RNSketchCanvas | null = null;
+
+  const wordArray = [
+    'Affe',
+    'Vollmond',
+    'Elefant',
+    'Schlange',
+    'Decke',
+    'Kissen',
+    'Bett',
+    'Programmiersprache',
+    'Massage',
+    'Wand',
+    'Küche',
+    'Balkon',
+    'Word',
+    'Fernseher',
+    'Schrank',
+    'Computer',
+    'Maus',
+  ];
+
+  const [isGameOver, setGameOver] = useState(false);
 
   const [isWordModalVisible, setWordModalVisibility] = useState(false);
   const [isWaitingModalVisible, setWaitingModalVisibility] = useState(false);
@@ -194,30 +254,102 @@ const Drawing = () => {
     false
   );
 
-  //TODO: Create a database of words to draw
-  const [choiceOneWord, setChoiceOneWord] = useState('Test eins');
-  const [choiceTwoWord, setChoiceTwoWord] = useState('Test zwei');
-  const [choiceThreeWord, setChoiceThreeWord] = useState('Test drei');
+  const [choiceOneWord, setChoiceOneWord] = useState('Test');
+  const [choiceTwoWord, setChoiceTwoWord] = useState('Test');
+  const [choiceThreeWord, setChoiceThreeWord] = useState('Test');
+
+  const [playerScores, setPlayerScores] = useState([] as Array<GamePlayer>);
 
   const [timer, setTimer] = useState(0);
 
   const [isDrawer, setDrawer] = useState(false);
 
+  //const [updateScore] = useMutation<UpdateScoreResp>(UPDATE_SCORE);
+  const [getScores] = useMutation<GetScoresResp>(GET_SCORES);
+
+  // const userUpdatesScore = async (score: number) => {
+  //   console.log('in userLeavesGame');
+  //
+  //   let mutationResult: any;
+  //   try {
+  //     mutationResult = await updateScore({
+  //       variables: {
+  //         addedScore: score,
+  //       },
+  //     });
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  //
+  //   const {data, errors} = mutationResult;
+  //
+  //   if (errors) {
+  //     console.log('Bye bye: ' + errors);
+  //   } else {
+  //     console.log('data:', data);
+  //   }
+  // };
+
+  const getPlayerScores = async () => {
+    console.log('in getPlayerScores');
+
+    if (getPlSc) {
+      getPlSc = false;
+      try {
+        let mutationResult = await getScores({
+          variables: {
+            gameId: gameIdG,
+          },
+        });
+
+        const {data, errors} = mutationResult;
+
+        const nodes = data?.getGame.game.gamePlayersByGameId.nodes;
+
+        setPlayerScores([] as Array<GamePlayer>);
+
+        nodes?.forEach((p) => {
+          setPlayerScores((pScores) =>
+            pScores.concat([
+              {username: p.playerByPlayerId.displayName, score: p.score},
+            ])
+          );
+        });
+
+        if (errors) {
+          console.log('Bye bye:', errors);
+        } else {
+          console.log(data);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  };
+
   const toggleChooseWordModal = () => {
     setWordModalVisibility(!isWordModalVisible);
   };
 
+  const randomWord = () => {
+    const randomIndex = Math.floor(Math.random() * wordArray.length);
+    return wordArray[randomIndex];
+  };
+
   useEffect(() => {
     const main = async () => {
-      //"as string" should maybe be removed
       playerUsernameG = (await AsyncStorage.getItem('user.name')) as string;
       gameIdG = (await AsyncStorage.getItem('game.id')) as string;
+      roundNumG = JSON.parse(
+        (await AsyncStorage.getItem('round.num')) as string
+      ) as number;
       playersG = JSON.parse(
         (await AsyncStorage.getItem('players')) as string
       ) as Array<string>;
       console.log('in useEffect w/o');
       console.log(playerUsernameG);
       console.log(gameIdG);
+      console.log(roundNumG);
       console.log(playersG);
       if (playerUsernameG === playersG[0]) {
         setDrawer(true);
@@ -225,8 +357,31 @@ const Drawing = () => {
       } else {
         setWaitingModalVisibility(true);
       }
+      // setChoiceOneWord(randomWord);
+      // setChoiceTwoWord(randomWord);
+      // while (choiceTwoWord === choiceOneWord) {
+      //   setChoiceTwoWord(randomWord);
+      // }
+      // setChoiceThreeWord(randomWord);
+      // while (
+      //   choiceThreeWord === choiceOneWord ||
+      //   choiceThreeWord === choiceTwoWord
+      // ) {
+      //   setChoiceThreeWord(randomWord);
+      // }
     };
     main();
+    return () => {
+      console.log('onComponentUnmounted');
+      socket.off('newPath');
+      socket.off('clear');
+      socket.off('undo');
+      socket.off('wordSelected');
+      socket.off('playerGuessedWrong');
+      socket.off('playerGuessedCorrect');
+      socket.off('roundFinished');
+      socket.off('gameOver');
+    };
   }, []);
 
   const [firstTime, setFirstTime] = useState(true);
@@ -237,9 +392,7 @@ const Drawing = () => {
     }
 
     if (timer === 0) {
-      console.log('in timer 0');
       if (isDrawer) {
-        console.log('in timer 0 is Drawer');
         const i = playersG.findIndex(
           (username) => username === playerUsernameG
         );
@@ -248,44 +401,64 @@ const Drawing = () => {
           console.error('Something went wrong');
         }
 
-        socket.emit(
-          'roundOver',
-          gameIdG,
-          playersG[i < playersG.length - 1 ? i + 1 : 0]
-        );
-
-        setRoundOverModalVisibility(true);
-        setTimeout(() => {
-          setRoundOverModalVisibility(false);
-          setDrawer(false);
-        }, 5000);
+        if (
+          roundNumG.toString() === rounds.toString() &&
+          i === playersG.length - 1
+        ) {
+          setGameOver(true);
+          socket.emit('gameIsOver', gameIdG);
+          //Maybe create another GameOverModal
+          getPlayerScores();
+          setRoundOverModalVisibility(true);
+          setTimeout(() => {
+            navigation.navigate('AfterGame');
+            getPlSc = true;
+            setRoundOverModalVisibility(false);
+          }, 5000);
+        } else {
+          socket.emit(
+            'roundOver',
+            gameIdG,
+            playersG[i < playersG.length - 1 ? i + 1 : 0]
+          );
+          getPlayerScores();
+          setRoundOverModalVisibility(true);
+          setTimeout(() => {
+            getPlSc = true;
+            setRoundOverModalVisibility(false);
+            setDrawer(false);
+          }, 5000);
+        }
       }
       return;
     } else if (timer === 8) {
-      console.log('in timer 8');
-      showMessage({
-        message:
-          "The word's first two letters are: " +
-          chosenWord.split('')[0] +
-          chosenWord.split('')[1] +
-          '_'.repeat(chosenWord.length - 2),
-        type: 'info',
-      });
+      if (!isDrawer) {
+        showMessage({
+          message:
+            "The word's first two letters are: " +
+            chosenWord.split('')[0] +
+            chosenWord.split('')[1] +
+            '_'.repeat(chosenWord.length - 2),
+          type: 'info',
+        });
+      }
     } else if (timer === 15) {
-      console.log('in timer 15');
-      showMessage({
-        message:
-          "The word's first letter is: " +
-          chosenWord.split('')[0] +
-          '_'.repeat(chosenWord.length - 1),
-        type: 'info',
-      });
+      if (!isDrawer) {
+        showMessage({
+          message:
+            "The word's first letter is: " +
+            chosenWord.split('')[0] +
+            '_'.repeat(chosenWord.length - 1),
+          type: 'info',
+        });
+      }
     } else if (timer === 23) {
-      console.log('in timer 23');
-      showMessage({
-        message: 'The word has ' + chosenWord.length + ' letters.',
-        type: 'info',
-      });
+      if (!isDrawer) {
+        showMessage({
+          message: 'The word has ' + chosenWord.length + ' letters.',
+          type: 'info',
+        });
+      }
     }
 
     // save intervalId to clear the interval when the
@@ -304,7 +477,6 @@ const Drawing = () => {
     if (gameIdG === gameId) {
       //draw the path
       canvas?.addPath(path);
-      console.log('Received (' + socket.id + '):', path);
     }
   });
 
@@ -312,7 +484,6 @@ const Drawing = () => {
     if (gameIdG === gameId) {
       //clear the canvas
       canvas?.clear();
-      console.log('Clear successful');
     }
   });
 
@@ -320,22 +491,18 @@ const Drawing = () => {
     if (gameIdG === gameId) {
       //undo the last drawn path
       canvas?.undo();
-      console.log('Undo successful');
     }
   });
 
   socket.on('wordSelected', (gameId: string, word: string) => {
-    console.log('wordSelected received: ' + gameId, word);
     if (gameIdG === gameId) {
       chosenWord = word;
-      console.log(word);
       setWaitingModalVisibility(false);
       setTimer(25);
     }
   });
 
   socket.on('playerGuessedWrong', (gameId, user, guess) => {
-    console.log('playerGuessedWrong received');
     if (gameIdG === gameId) {
       showMessage({
         message: user + ': ' + guess,
@@ -347,15 +514,7 @@ const Drawing = () => {
   socket.on('playerGuessedCorrect', (gameId, playerUsername, guess) => {
     const main = async () => {
       if (gameIdG === gameId) {
-        showMessage({
-          message: playerUsername + ' guessed the correct word: ' + guess,
-          type: 'warning',
-        });
-        console.log('in PlayerGuessedCorrect');
         if (isDrawer) {
-          console.log('in PlayerGuessedCorrect isDrawer');
-          setFirstTime(true);
-          setTimer(0);
           const i = playersG.findIndex(
             (username) => username === playerUsernameG
           );
@@ -363,19 +522,39 @@ const Drawing = () => {
           if (i < 0) {
             console.error('Something went wrong');
           }
-
-          socket.emit(
-            'roundOver',
-            gameIdG,
-            playersG[i < playersG.length - 1 ? i + 1 : 0]
-          );
+          if (getPlSc) {
+            getPlayerScores();
+            getPlSc = false;
+          }
           setRoundOverModalVisibility(true);
-          setTimeout(() => {
-            console.log('in PlayerGuessedCorrect in Drawer set Timeout');
-            setDrawer(false);
-            setRoundOverModalVisibility(false);
-            setWaitingModalVisibility(true);
-          }, 5000);
+          if (
+            roundNumG.toString() === rounds.toString() &&
+            i === playersG.length - 1
+          ) {
+            setGameOver(true);
+            socket.emit('gameIsOver', gameIdG);
+            setRoundOverModalVisibility(true);
+            setTimeout(() => {
+              navigation.navigate('AfterGame');
+              getPlSc = true;
+              setRoundOverModalVisibility(false);
+            }, 5000);
+          } else {
+            socket.emit(
+              'roundOver',
+              gameIdG,
+              playersG[i < playersG.length - 1 ? i + 1 : 0]
+            );
+
+            setRoundOverModalVisibility(true);
+            setTimeout(() => {
+              getPlSc = true;
+              setRoundOverModalVisibility(false);
+              setDrawer(false);
+            }, 5000);
+          }
+        } else {
+          setTimer(0);
         }
       }
     };
@@ -383,25 +562,44 @@ const Drawing = () => {
   });
 
   socket.on('roundFinished', (gameId, nextPlayer) => {
-    console.log('in roundFinished, nextPlayer: ', nextPlayer);
     if (gameIdG === gameId) {
-      // setFirstTime(true);
+      if (getPlSc) {
+        getPlayerScores();
+        getPlSc = false;
+      }
       setRoundOverModalVisibility(true);
+      setTimer(0);
       setTimeout(() => {
-        console.log('in roundFinished setTimeout', playerUsernameG, nextPlayer);
         if (nextPlayer === playerUsernameG) {
-          console.log('nextPlayer is drawer');
+          getPlSc = true;
           setDrawer(true);
+          // setChoiceOneWord(randomWord);
+          // setChoiceTwoWord(randomWord);
+          // while (choiceTwoWord === choiceOneWord) {
+          //   setChoiceTwoWord(randomWord);
+          // }
+          // setChoiceThreeWord(randomWord);
+          // while (
+          //   choiceThreeWord === choiceOneWord ||
+          //   choiceThreeWord === choiceTwoWord
+          // ) {
+          //   setChoiceThreeWord(randomWord);
+          // }
           // console.log(isWordModalVisible);
           // setWordModalVisibility(true);
         }
         setRoundOverModalVisibility(false);
-        // else {
-        //   console.log('nextPlayer is not drawer');
-        //   // if (!isWaitingModalVisible) {
-        //   setWaitingModalVisibility(true);
-        //   // }
-        // }
+      }, 5000);
+    }
+  });
+
+  socket.on('gameOver', (gameId) => {
+    if (gameId === gameIdG) {
+      setGameOver(true);
+      setRoundOverModalVisibility(true);
+      setTimeout(() => {
+        navigation.navigate('AfterGame');
+        setRoundOverModalVisibility(false);
       }, 5000);
     }
   });
@@ -448,6 +646,7 @@ const Drawing = () => {
                     console.log(word);
                     chosenWord = word;
                     setTimer(25);
+                    rounds++;
                     socket.emit('selectWord', gameIdG, word);
                     setWordModalVisibility(false);
                   }
@@ -465,6 +664,7 @@ const Drawing = () => {
                   socket.emit('selectWord', gameIdG, choiceOneWord);
                   toggleChooseWordModal();
                   setTimer(25);
+                  rounds++;
                 }}>
                 {choiceOneWord}
               </Button>
@@ -475,6 +675,7 @@ const Drawing = () => {
                   socket.emit('selectWord', gameIdG, choiceTwoWord);
                   toggleChooseWordModal();
                   setTimer(25);
+                  rounds++;
                 }}>
                 {choiceTwoWord}
               </Button>
@@ -485,6 +686,7 @@ const Drawing = () => {
                   socket.emit('selectWord', gameIdG, choiceThreeWord);
                   toggleChooseWordModal();
                   setTimer(25);
+                  rounds++;
                 }}>
                 {choiceThreeWord}
               </Button>
@@ -501,12 +703,24 @@ const Drawing = () => {
             backdropTransitionInTiming={600}
             backdropTransitionOutTiming={600}
             onModalHide={() => {
-              console.log('Kohpai', "it's visible");
-              setWordModalVisibility(true);
+              if (!isGameOver) {
+                console.log('Kohpai', "it's visible");
+                setWordModalVisibility(true);
+              }
             }}>
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Round over:</Text>
-              {/*Insert flatlist with username + score */}
+              <FlatList
+                data={playerScores.map((u) => ({
+                  username: u.username,
+                  score: u.score,
+                }))}
+                renderItem={({item}) => (
+                  <Text style={styles.item}>
+                    {item.username} {item.score}
+                  </Text>
+                )}
+              />
             </View>
           </Modal>
           <RNSketchCanvas
@@ -611,12 +825,24 @@ const Drawing = () => {
             backdropTransitionInTiming={600}
             backdropTransitionOutTiming={600}
             onModalHide={() => {
-              console.log('Kohpai', "it's waiting");
-              setWaitingModalVisibility(true);
+              if (!isGameOver) {
+                console.log('Kohpai', "it's waiting");
+                setWaitingModalVisibility(true);
+              }
             }}>
             <View style={styles.content}>
               <Text style={styles.contentTitle}>Round over:</Text>
-              {/*Insert flatlist with username + score */}
+              <FlatList
+                data={playerScores.map((u) => ({
+                  username: u.username,
+                  score: u.score,
+                }))}
+                renderItem={({item}) => (
+                  <Text style={styles.item}>
+                    {item.username} {item.score}
+                  </Text>
+                )}
+              />
             </View>
           </Modal>
           <View style={{flex: 1}} pointerEvents={'none'}>
@@ -627,6 +853,20 @@ const Drawing = () => {
             />
           </View>
           <VoiceGuess />
+        </View>
+        <View
+          style={{
+            position: 'absolute',
+            //should may be changed
+            top: '7.2%',
+            alignItems: 'center',
+          }}>
+          <Text
+            style={{
+              fontSize: 25,
+            }}>
+            {timer}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -645,6 +885,11 @@ const style = (w: number) =>
   });
 
 const styles = StyleSheet.create({
+  item: {
+    padding: 8,
+    fontSize: 18,
+    height: 50,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -730,6 +975,4 @@ const styles = StyleSheet.create({
 
 // const updatePath = (path) => {};
 
-const GameScreen = () => <Drawing />;
-
-export default memo(GameScreen);
+export default memo(Drawing);

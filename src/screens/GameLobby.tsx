@@ -23,7 +23,6 @@ type Props = {
 let gameIdG: string;
 let gameTotal: number;
 let gamePlayers: any;
-let roundNumG: number;
 let playerIdG: string;
 let playerUsernameG: string | null;
 
@@ -53,6 +52,12 @@ interface LeaveGameResp {
 
 interface ChangeGameStatusResp {
   changeGameStatus: {
+    clientMutationId: string;
+  };
+}
+
+interface UpdateRoundNumberResp {
+  updateRoundNum: {
     clientMutationId: string;
   };
 }
@@ -93,11 +98,22 @@ const CHANGE_GAME_STATUS = gql`
   }
 `;
 
+const UPDATE_ROUND_NUMBER = gql`
+  mutation updateGameRoundNumber($gameId: UUID!, $rounds: Int!) {
+    updateRoundNum(input: {gameId: $gameId, rounds: $rounds}) {
+      clientMutationId
+    }
+  }
+`;
+
 const GameLobby = ({navigation}: Props) => {
   const [joinGame] = useMutation<JoinGameResp>(JOIN_GAME);
   const [leaveGame] = useMutation<LeaveGameResp>(LEAVE_GAME);
   const [changeGameStatus] = useMutation<ChangeGameStatusResp>(
     CHANGE_GAME_STATUS
+  );
+  const [updateRoundNumber] = useMutation<UpdateRoundNumberResp>(
+    UPDATE_ROUND_NUMBER
   );
 
   const userLeavesGame = async () => {
@@ -146,10 +162,27 @@ const GameLobby = ({navigation}: Props) => {
     }
   };
 
+  const updateGameRoundNumber = async (r: number) => {
+    let mutationResult: any;
+    try {
+      mutationResult = await updateRoundNumber({
+        variables: {gameId: gameIdG, rounds: r},
+      });
+    } catch (err) {
+      console.log('Error in UpdateGameRoundNumber', err);
+    }
+
+    const {data, errors} = mutationResult;
+
+    if (errors) {
+      console.log('Bye bye: ' + errors);
+    } else {
+      console.log('data:', data);
+    }
+  };
+
   useEffect(() => {
     const main = async () => {
-      console.log('in onFinish');
-
       try {
         const mutationResult = await joinGame();
         console.log('Joined successfully');
@@ -165,10 +198,9 @@ const GameLobby = ({navigation}: Props) => {
           }
 
           gameIdG = id;
-          roundNumG = roundNum;
           try {
             await AsyncStorage.setItem('game.id', gameIdG);
-            await AsyncStorage.setItem('round.num', JSON.stringify(roundNumG));
+            await AsyncStorage.setItem('round.num', JSON.stringify(roundNum));
           } catch (e) {
             console.log('Error:', e);
           }
@@ -177,11 +209,6 @@ const GameLobby = ({navigation}: Props) => {
           gamePlayers = nodes;
           playerUsernameG = await AsyncStorage.getItem('user.name');
           nodes.forEach((u) => {
-            console.log(
-              'in nodes.forEach:',
-              u.playerByPlayerId.id,
-              u.playerByPlayerId.displayName
-            );
             setUsernames((users) =>
               users.concat(u.playerByPlayerId.displayName)
             );
@@ -217,7 +244,7 @@ const GameLobby = ({navigation}: Props) => {
   //change to false as default value after/while testing
 
   const [settingsEnabled, setSettingsEnabled] = useState(false);
-  const [startButtonEnabled, setStartButtonEnabled] = useState(true);
+  const [startButtonEnabled, setStartButtonEnabled] = useState(false);
   const [leaveGameButtonEnabled, setLeaveGameButtonEnabled] = useState(true);
 
   const [numberOfRounds, setNumberOfRounds] = useState('3');
@@ -241,9 +268,13 @@ const GameLobby = ({navigation}: Props) => {
   });
 
   socket.on('roundNumberUpdated', (gameId, roundNum) => {
-    if (gameIdG === gameId) {
-      roundNumG = roundNum;
-    }
+    const main = async () => {
+      if (gameIdG === gameId) {
+        console.log('received new round number:', roundNum);
+        await AsyncStorage.setItem('round.num', JSON.stringify(roundNum));
+      }
+    };
+    main();
   });
 
   socket.on('gameStarted', (gameId) => {
@@ -296,8 +327,18 @@ const GameLobby = ({navigation}: Props) => {
           <Button
             testID={'close-button'}
             onPress={() => {
-              socket.emit('newRoundNumber', gameIdG, numberOfRounds);
-              toggleModal;
+              if (/^\d+$/.test(numberOfRounds)) {
+                const main = async () => {
+                  await updateGameRoundNumber(parseInt(numberOfRounds, 10));
+                  await AsyncStorage.setItem(
+                    'round.num',
+                    JSON.stringify(parseInt(numberOfRounds, 10))
+                  );
+                  socket.emit('newRoundNumber', gameIdG, numberOfRounds);
+                };
+                main();
+              }
+              toggleModal();
             }}>
             Apply
           </Button>

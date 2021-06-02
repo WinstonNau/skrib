@@ -152,15 +152,14 @@ class VoiceGuess extends Component<Props, State> {
           message: w,
           type: 'success',
         });
-        socket.emit('correctGuess', gameIdG, playerUsernameG);
-        //TODO: Also call a mutation, which increases the score of the gamePlayer by timer * 10
         const {mutate} = this.props;
 
         if (mutate) {
           const {data} = await mutate({
             variables: {addedScore: this.props.timer * 10},
-            fetchPolicy: 'network-only',
           });
+
+          socket.emit('correctGuess', gameIdG, playerUsernameG);
 
           if (data) {
             console.log('Success', data);
@@ -291,7 +290,7 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
 
   const [isDrawer, setDrawer] = useState(false);
 
-  //const [updateScore] = useMutation<UpdateScoreResp>(UPDATE_SCORE);
+  const [updateScore] = useMutation(UPDATE_SCORES);
   const [getScores] = useMutation<GetScoresResp>(GET_SCORES);
 
   // const userUpdatesScore = async (score: number) => {
@@ -331,6 +330,8 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
 
         const {data, errors} = mutationResult;
 
+        console.log('getPlayerScores data:', data);
+
         const nodes = data?.getGame.game.gamePlayersByGameId.nodes;
 
         setPlayerScores([] as Array<GamePlayer>);
@@ -349,8 +350,28 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
           console.log(data);
         }
       } catch (e) {
-        console.log(e);
+        console.log('getPlayerScores error:', e);
       }
+    }
+  };
+
+  const updatePlayerScore = async () => {
+    try {
+      let mutationResult = await updateScore({
+        variables: {
+          addedScore: timer * 10,
+        },
+      });
+
+      const {data, errors} = mutationResult;
+
+      if (errors) {
+        console.log('Bye bye:', errors);
+      } else {
+        console.log(data);
+      }
+    } catch (e) {
+      console.log('getPlayerScores error:', e);
     }
   };
 

@@ -249,6 +249,18 @@ const UPDATE_SCORES = gql`
 
 const EnhancedVoiceGuess = graphql<Props>(UPDATE_SCORES)(VoiceGuess);
 
+function shuffleArray(array: any[]) {
+  array.forEach((v, i, arr) => {
+    if (i === 0) {
+      return;
+    }
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  });
+}
+
 const Drawing = ({navigation}: {navigation: Navigation}) => {
   let canvas: RNSketchCanvas | null = null;
 
@@ -405,18 +417,10 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
       } else {
         setWaitingModalVisibility(true);
       }
-      // setChoiceOneWord(randomWord);
-      // setChoiceTwoWord(randomWord);
-      // while (choiceTwoWord === choiceOneWord) {
-      //   setChoiceTwoWord(randomWord);
-      // }
-      // setChoiceThreeWord(randomWord);
-      // while (
-      //   choiceThreeWord === choiceOneWord ||
-      //   choiceThreeWord === choiceTwoWord
-      // ) {
-      //   setChoiceThreeWord(randomWord);
-      // }
+      shuffleArray(wordArray);
+      setChoiceOneWord(wordArray[0]);
+      setChoiceTwoWord(wordArray[1]);
+      setChoiceThreeWord(wordArray[2]);
     };
     main();
     return () => {
@@ -621,20 +625,12 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
         if (nextPlayer === playerUsernameG) {
           getPlSc = true;
           setDrawer(true);
-          // setChoiceOneWord(randomWord);
-          // setChoiceTwoWord(randomWord);
-          // while (choiceTwoWord === choiceOneWord) {
-          //   setChoiceTwoWord(randomWord);
-          // }
-          // setChoiceThreeWord(randomWord);
-          // while (
-          //   choiceThreeWord === choiceOneWord ||
-          //   choiceThreeWord === choiceTwoWord
-          // ) {
-          //   setChoiceThreeWord(randomWord);
-          // }
-          // console.log(isWordModalVisible);
-          // setWordModalVisibility(true);
+          shuffleArray(wordArray);
+          setChoiceOneWord(wordArray[0]);
+          setChoiceTwoWord(wordArray[1]);
+          setChoiceThreeWord(wordArray[2]);
+          console.log(isWordModalVisible);
+          setWordModalVisibility(true);
         }
         setRoundOverModalVisibility(false);
       }, 5000);

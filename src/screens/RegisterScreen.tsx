@@ -44,6 +44,8 @@ const RegisterScreen = ({navigation}: Props) => {
   const [email, setEmail] = useState({value: '', error: ''});
   const [password, setPassword] = useState({value: '', error: ''});
 
+  const [registerButton, setRegisterButton] = useState(true);
+
   const [getUsername, {loading, data}] = useLazyQuery<CheckUsernameResp>(
     CHECK_USERNAME
   );
@@ -59,6 +61,7 @@ const RegisterScreen = ({navigation}: Props) => {
             const setLoggedIn = async () => {
               await AsyncStorage.setItem('logged.in', JSON.stringify(false));
               navigation.navigate('Dashboard');
+              setRegisterButton(true);
             };
             setLoggedIn();
           })
@@ -79,12 +82,16 @@ const RegisterScreen = ({navigation}: Props) => {
               console.log('That email address is invalid!');
             }
 
+            setRegisterButton(true);
+
             console.error(error);
           });
       } else if (data?.playerByDisplayName.displayName === name.value) {
         setName({...name, error: 'This username is already in use.'});
+        setRegisterButton(true);
       } else {
         setName({...name, error: 'An unknown error occurred.'});
+        setRegisterButton(true);
         console.log('An unknown error occurred.');
       }
     }
@@ -95,6 +102,8 @@ const RegisterScreen = ({navigation}: Props) => {
   }
 
   const _onSignUpPressed = async () => {
+    setRegisterButton(false);
+
     const nameError = nameValidator(name.value);
     const emailError = emailValidator(email.value);
     const passwordError = passwordValidator(password.value);
@@ -103,6 +112,7 @@ const RegisterScreen = ({navigation}: Props) => {
       setName({...name, error: nameError});
       setEmail({...email, error: emailError});
       setPassword({...password, error: passwordError});
+      setRegisterButton(true);
       return;
     }
 
@@ -159,10 +169,9 @@ const RegisterScreen = ({navigation}: Props) => {
 
       <Button
         mode="contained"
-        onPress={() => {
-          _onSignUpPressed();
-        }}
-        style={styles.button}>
+        onPress={_onSignUpPressed}
+        style={styles.button}
+        disabled={!registerButton}>
         Sign Up
       </Button>
 

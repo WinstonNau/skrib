@@ -38,7 +38,9 @@ function Main() {
   return (
     <ApolloProvider client={client}>
       <Provider theme={theme}>
-        <App />
+        <SocketIOProvider url="https://skrib-socket.herokuapp.com">
+          <App />
+        </SocketIOProvider>
       </Provider>
     </ApolloProvider>
   );

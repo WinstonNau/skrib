@@ -34,8 +34,6 @@ let playerUsernameG: string;
 let chosenWord: string;
 let playersG: Array<string>;
 let rounds = 0;
-//TODO: Figure out a better way to do getPlSc
-let getPlSc = true;
 
 interface Props extends Partial<MutateProps> {
   timer: number;
@@ -156,15 +154,17 @@ class VoiceGuess extends Component<Props, State> {
         const {mutate} = this.props;
 
         if (mutate) {
+          console.log('timer:', this.props.timer);
           const {data} = await mutate({
             variables: {addedScore: this.props.timer * 10},
+            fetchPolicy: 'no-cache',
           });
-
-          socket.emit('correctGuess', gameIdG, playerUsernameG);
 
           if (data) {
             console.log('Success', data);
           }
+
+          socket.emit('correctGuess', gameIdG, playerUsernameG);
         }
       } else {
         console.log('wrong guess');
@@ -183,18 +183,10 @@ class VoiceGuess extends Component<Props, State> {
   };
 
   onSpeechPartialResults = (e: SpeechResultsEvent) => {
-    console.log('onSpeechPartialResults: ', e);
     this.setState({
       partialResults: e.value || [],
     });
   };
-
-  // onSpeechVolumeChanged = (e: any) => {
-  //   console.log('onSpeechVolumeChanged: ', e);
-  //   this.setState({
-  //     pitch: e.value,
-  //   });
-  // };
 
   _startRecognizing = async () => {
     this.setState({
@@ -303,15 +295,7 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
 
   const [isDrawer, setDrawer] = useState(false);
 
-  const [updateScore] = useMutation(UPDATE_SCORES);
   const [getScores] = useMutation<GetScoresResp>(GET_SCORES);
-
-  useSocket('newPath', (gameId: string, path: any) => {
-    if (gameIdG === gameId) {
-      //draw the path
-      canvas?.addPath(path);
-    }
-  });
 
   // const userUpdatesScore = async (score: number) => {
   //   console.log('in userLeavesGame');
@@ -337,53 +321,30 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
   // };
 
   const getPlayerScores = async () => {
-    console.log('in getPlayerScores');
+    console.log('in getPlayerScores', playerUsernameG);
 
-    if (getPlSc) {
-      getPlSc = false;
-      try {
-        let mutationResult = await getScores({
-          variables: {
-            gameId: gameIdG,
-          },
-        });
-
-        const {data, errors} = mutationResult;
-
-        console.log('getPlayerScores data:', data);
-
-        const nodes = data?.getGame.game.gamePlayersByGameId.nodes;
-
-        setPlayerScores([] as Array<GamePlayer>);
-
-        nodes?.forEach((p) => {
-          setPlayerScores((pScores) =>
-            pScores.concat([
-              {username: p.playerByPlayerId.displayName, score: p.score},
-            ])
-          );
-        });
-
-        if (errors) {
-          console.log('Bye bye:', errors);
-        } else {
-          console.log(data);
-        }
-      } catch (e) {
-        console.log('getPlayerScores error:', e);
-      }
-    }
-  };
-
-  const updatePlayerScore = async () => {
     try {
-      let mutationResult = await updateScore({
+      let mutationResult = await getScores({
         variables: {
-          addedScore: timer * 10,
+          gameId: gameIdG,
         },
       });
 
       const {data, errors} = mutationResult;
+
+      console.log('getPlayerScores data:', data);
+
+      const nodes = data?.getGame.game.gamePlayersByGameId.nodes;
+
+      setPlayerScores([] as Array<GamePlayer>);
+
+      nodes?.forEach((p) => {
+        setPlayerScores((pScores) =>
+          pScores.concat([
+            {username: p.playerByPlayerId.displayName, score: p.score},
+          ])
+        );
+      });
 
       if (errors) {
         console.log('Bye bye:', errors);
@@ -397,11 +358,6 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
 
   const toggleChooseWordModal = () => {
     setWordModalVisibility(!isWordModalVisible);
-  };
-
-  const randomWord = () => {
-    const randomIndex = Math.floor(Math.random() * wordArray.length);
-    return wordArray[randomIndex];
   };
 
   useEffect(() => {
@@ -452,7 +408,7 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
     }
 
     if (timer === 0) {
-      if (isDrawer) {
+      if (isDrawer && !isGameOver) {
         const i = playersG.findIndex(
           (username) => username === playerUsernameG
         );
@@ -469,10 +425,11 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
           socket.emit('gameIsOver', gameIdG);
           //Maybe create another GameOverModal
           getPlayerScores();
-          setRoundOverModalVisibility(true);
+          if (!isGameOver) {
+            setRoundOverModalVisibility(true);
+          }
           setTimeout(() => {
             navigation.navigate('AfterGame');
-            getPlSc = true;
             setRoundOverModalVisibility(false);
           }, 5000);
         } else {
@@ -482,9 +439,10 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
             playersG[i < playersG.length - 1 ? i + 1 : 0]
           );
           getPlayerScores();
-          setRoundOverModalVisibility(true);
+          if (!isGameOver) {
+            setRoundOverModalVisibility(true);
+          }
           setTimeout(() => {
-            getPlSc = true;
             setRoundOverModalVisibility(false);
             setDrawer(false);
           }, 5000);
@@ -540,30 +498,40 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
   //   }
   // });
 
-  socket.on('clear', (gameId: string) => {
-    if (gameIdG === gameId) {
-      //clear the canvas
+  useSocket('newPath', (gameId: string, path: any) => {
+    if (gameIdG === gameId && !isDrawer) {
+      //draw the path
+      console.log(path, playerUsernameG);
+      canvas?.addPath(path);
+    }
+  });
+
+  useSocket('clear', (gameId: string) => {
+    if (gameId === gameIdG && !isDrawer) {
+      console.log('received clear req', playerUsernameG);
       canvas?.clear();
     }
   });
 
-  socket.on('undo', (gameId: string) => {
-    if (gameIdG === gameId) {
-      //undo the last drawn path
+  useSocket('undo', (gameId: string) => {
+    if (gameId === gameIdG && !isDrawer) {
+      console.log('received undo req', playerUsernameG);
       canvas?.undo();
     }
   });
 
-  socket.on('wordSelected', (gameId: string, word: string) => {
-    if (gameIdG === gameId) {
+  useSocket('wordSelected', (gameId: string, word: string) => {
+    if (gameIdG === gameId && !isDrawer) {
+      console.log('in wordSelected', playerUsernameG);
       chosenWord = word;
       setWaitingModalVisibility(false);
       setTimer(25);
     }
   });
 
-  socket.on('playerGuessedWrong', (gameId, user, guess) => {
-    if (gameIdG === gameId) {
+  useSocket('playerGuessedWrong', (gameId, user, guess) => {
+    if (gameIdG === gameId && !isDrawer) {
+      console.log('in playerGuessedWrong', playerUsernameG);
       showMessage({
         message: user + ': ' + guess,
         type: 'default',
@@ -571,9 +539,9 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
     }
   });
 
-  socket.on('playerGuessedCorrect', (gameId, playerUsername, guess) => {
+  useSocket('playerGuessedCorrect', (gameId, playerUsername) => {
     const main = async () => {
-      if (gameIdG === gameId) {
+      if (gameIdG === gameId && playerUsername !== playerUsernameG) {
         if (isDrawer) {
           const i = playersG.findIndex(
             (username) => username === playerUsernameG
@@ -582,11 +550,7 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
           if (i < 0) {
             console.error('Something went wrong');
           }
-          if (getPlSc) {
-            getPlayerScores();
-            getPlSc = false;
-          }
-          setRoundOverModalVisibility(true);
+          getPlayerScores();
           if (
             roundNumG.toString() === rounds.toString() &&
             i === playersG.length - 1
@@ -596,7 +560,6 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
             setRoundOverModalVisibility(true);
             setTimeout(() => {
               navigation.navigate('AfterGame');
-              getPlSc = true;
               setRoundOverModalVisibility(false);
             }, 5000);
           } else {
@@ -608,7 +571,6 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
 
             setRoundOverModalVisibility(true);
             setTimeout(() => {
-              getPlSc = true;
               setRoundOverModalVisibility(false);
               setDrawer(false);
             }, 5000);
@@ -621,32 +583,28 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
     main();
   });
 
-  socket.on('roundFinished', (gameId, nextPlayer) => {
-    if (gameIdG === gameId) {
-      if (getPlSc) {
-        getPlayerScores();
-        getPlSc = false;
-      }
+  useSocket('roundFinished', (gameId, nextPlayer) => {
+    if (gameIdG === gameId && !isDrawer) {
+      console.log('in roundFinished', playerUsernameG);
+      getPlayerScores();
       setRoundOverModalVisibility(true);
       setTimer(0);
       setTimeout(() => {
         if (nextPlayer === playerUsernameG) {
-          getPlSc = true;
           setDrawer(true);
           shuffleArray(wordArray);
           setChoiceOneWord(wordArray[0]);
           setChoiceTwoWord(wordArray[1]);
           setChoiceThreeWord(wordArray[2]);
-          console.log(isWordModalVisible);
-          setWordModalVisibility(true);
         }
         setRoundOverModalVisibility(false);
       }, 5000);
     }
   });
 
-  socket.on('gameOver', (gameId) => {
-    if (gameId === gameIdG) {
+  useSocket('gameOver', (gameId) => {
+    if (gameId === gameIdG && !isDrawer) {
+      console.log('in gameOver');
       setGameOver(true);
       setRoundOverModalVisibility(true);
       setTimeout(() => {
@@ -655,6 +613,30 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
       }, 5000);
     }
   });
+
+  const onClickButtonOne = () => {
+    chosenWord = choiceOneWord;
+    socket.emit('selectWord', gameIdG, choiceOneWord);
+    toggleChooseWordModal();
+    setTimer(25);
+    rounds++;
+  };
+
+  const onClickButtonTwo = () => {
+    chosenWord = choiceTwoWord;
+    socket.emit('selectWord', gameIdG, choiceTwoWord);
+    toggleChooseWordModal();
+    setTimer(25);
+    rounds++;
+  };
+
+  const onClickButtonThree = () => {
+    chosenWord = choiceThreeWord;
+    socket.emit('selectWord', gameIdG, choiceThreeWord);
+    toggleChooseWordModal();
+    setTimer(25);
+    rounds++;
+  };
 
   if (isDrawer) {
     return (
@@ -709,42 +691,21 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
                   </Animated.Text>
                 )}
               </CountdownCircleTimer>
-              <Button
-                testID={'choice-one-button'}
-                onPress={() => {
-                  chosenWord = choiceOneWord;
-                  socket.emit('selectWord', gameIdG, choiceOneWord);
-                  toggleChooseWordModal();
-                  setTimer(25);
-                  rounds++;
-                }}>
+              <Button testID={'choice-one-button'} onPress={onClickButtonOne}>
                 {choiceOneWord}
               </Button>
-              <Button
-                testID={'choice-two-button'}
-                onPress={() => {
-                  chosenWord = choiceTwoWord;
-                  socket.emit('selectWord', gameIdG, choiceTwoWord);
-                  toggleChooseWordModal();
-                  setTimer(25);
-                  rounds++;
-                }}>
+              <Button testID={'choice-two-button'} onPress={onClickButtonTwo}>
                 {choiceTwoWord}
               </Button>
               <Button
                 testID={'choice-three-button'}
-                onPress={() => {
-                  chosenWord = choiceThreeWord;
-                  socket.emit('selectWord', gameIdG, choiceThreeWord);
-                  toggleChooseWordModal();
-                  setTimer(25);
-                  rounds++;
-                }}>
+                onPress={onClickButtonThree}>
                 {choiceThreeWord}
               </Button>
             </View>
           </Modal>
           <Modal
+            useNativeDriver={true}
             isVisible={isRoundOverModalVisible}
             backdropColor="#B4B3DB"
             backdropOpacity={0.8}
@@ -777,7 +738,6 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
           </Modal>
           <RNSketchCanvas
             onStrokeEnd={(path) => {
-              console.log('onStrokeEnd:', JSON.stringify(path));
               socket.emit('newPathDrawn', gameIdG, path);
             }}
             ref={(ref: RNSketchCanvas) => (canvas = ref)}
@@ -867,6 +827,7 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
             </View>
           </Modal>
           <Modal
+            useNativeDriver={true}
             isVisible={isRoundOverModalVisible}
             backdropColor="#B4B3DB"
             backdropOpacity={0.8}
@@ -1024,7 +985,5 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
 });
-
-// const updatePath = (path) => {};
 
 export default memo(Drawing);

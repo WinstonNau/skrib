@@ -4,6 +4,7 @@ import {Provider} from 'react-native-paper';
 import App from './src';
 import {theme} from './src/core/theme';
 import {ApolloProvider} from '@apollo/client';
+import {SocketIOProvider} from 'use-socketio';
 
 import client from './src/lib/apollo';
 

@@ -24,6 +24,7 @@ import Voice, {
 import {gql} from '@apollo/client/core';
 import {useMutation} from '@apollo/client';
 import {graphql, MutateProps} from '@apollo/client/react/hoc';
+import {useSocket} from 'use-socketio';
 
 import {Navigation} from '../types';
 
@@ -305,6 +306,13 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
   const [updateScore] = useMutation(UPDATE_SCORES);
   const [getScores] = useMutation<GetScoresResp>(GET_SCORES);
 
+  useSocket('newPath', (gameId: string, path: any) => {
+    if (gameIdG === gameId) {
+      //draw the path
+      canvas?.addPath(path);
+    }
+  });
+
   // const userUpdatesScore = async (score: number) => {
   //   console.log('in userLeavesGame');
   //
@@ -525,12 +533,12 @@ const Drawing = ({navigation}: {navigation: Navigation}) => {
     // when we update it
   }, [timer]);
 
-  socket.on('newPath', (gameId: string, path: any) => {
-    if (gameIdG === gameId) {
-      //draw the path
-      canvas?.addPath(path);
-    }
-  });
+  // socket.on('newPath', (gameId: string, path: any) => {
+  //   if (gameIdG === gameId) {
+  //     //draw the path
+  //     canvas?.addPath(path);
+  //   }
+  // });
 
   socket.on('clear', (gameId: string) => {
     if (gameIdG === gameId) {

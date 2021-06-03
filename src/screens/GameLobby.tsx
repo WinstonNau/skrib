@@ -368,10 +368,10 @@ const GameLobby = ({navigation}: Props) => {
                 toggleAlert();
                 navigation.navigate('Dashboard');
               }}>
-              Back
+              Yes
             </Button>
             <Button style={{flex: 1}} onPress={toggleAlert}>
-              Close
+              No
             </Button>
           </View>
         </View>

@@ -14,7 +14,6 @@ import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {gql} from '@apollo/client/core';
 import {useLazyQuery} from '@apollo/client';
-import {getUserAgent} from 'react-native-device-info';
 
 // GoogleSignin.configure({
 //   webClientId:
@@ -49,6 +48,8 @@ const RegisterScreen = ({navigation}: Props) => {
   const [getUsername, {loading, data}] = useLazyQuery<CheckUsernameResp>(
     CHECK_USERNAME
   );
+
+  const user = auth().currentUser;
 
   useEffect(() => {
     if (data) {
@@ -187,7 +188,14 @@ const RegisterScreen = ({navigation}: Props) => {
 
       <View style={styles.row}>
         <Text style={styles.label}>Already have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
+        <TouchableOpacity
+          onPress={() => {
+            if (user) {
+              navigation.navigate('Dashboard');
+            } else {
+              navigation.navigate('LoginScreen');
+            }
+          }}>
           <Text style={styles.link}>Login</Text>
         </TouchableOpacity>
       </View>

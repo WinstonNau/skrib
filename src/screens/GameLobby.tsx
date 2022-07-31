@@ -11,6 +11,7 @@ import {gql, useMutation} from '@apollo/client';
 import {TextInput} from 'react-native-paper';
 import socket from '../lib/socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useSocket} from 'use-socketio';
 
 type Props = {
   navigation: Navigation;

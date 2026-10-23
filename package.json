@@ -64,7 +64,7 @@
     "eslint": "^6.5.1",
     "fs": "^0.0.1-security",
     "fs.realpath": "^1.0.0",
-    "jest": "^25.1.0",
+    "jest": "^30.5.2",
     "metro-react-native-babel-preset": "^0.59.0",
     "path": "^0.12.7",
     "prettier": "^2.0.4",
